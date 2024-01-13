@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_terminal"
+        android:icon="@drawable/ic_terminal_black_24dp"
+        android:title="@string/title_home" />
+
+    <item
+        android:id="@+id/navigation_packetmode"
+        android:icon="@drawable/ic_packetmode_black_24dp"
+        android:title="@string/title_dashboard" />
+
+    <item
+        android:id="@+id/navigation_rawmode"
+        android:icon="@drawable/ic_rawmode_black_24dp"
+        android:title="Raw Mode" />
+
+    <item
+        android:id="@+id/navigation_scripts"
+        android:icon="@drawable/ic_scripts_black_24dp"
+        android:title="Scripts" />
+
+    <item
+        android:id="@+id/navigation_flash"
+        android:icon="@drawable/ic_flash_black_24dp"
+        android:title="@string/title_notifications" />
+
+
+
+</menu>

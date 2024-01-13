@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">ISM Waver</string>
+    <string name="title_home">Terminal</string>
+    <string name="title_dashboard">Packet Mode</string>
+    <string name="title_notifications">Flash</string>
+    <string name="connect">connect</string>
+    <string name="enter_command">Enter command...</string>
+    <string name="clear">clear</string>
+    <string name="receive_tab">Receive</string>
+    <string name="transmit_tab">Transmit</string>
+    <string-array name="modulations">
+        <item>Select a modulation</item>
+        <item>ASK</item>
+        <item>FSK</item>
+    </string-array>
+    <string-array name="preambles">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>6</item>
+        <item>8</item>
+        <item>12</item>
+        <item>16</item>
+        <item>24</item>
+    </string-array>
+    <string-array name="sync_modes">
+        <item>No preamble/sync word</item>
+        <item>15/16 bits</item>
+        <item>16/16 bits</item>
+        <item>30/32 bits</item>
+        <item>No preamble/sync + carrier sense above threshold</item>
+        <item>15/16 + carrier sense above threshold</item>
+        <item>16/16 + carrier sense above threshold</item>
+        <item>30/32 + carrier sense above threshold</item>
+    </string-array>
+    <string-array name="javascript_files">
+        <item>script1.js</item>
+        <item>script2.js</item>
+        <item>script3.js</item>
+    </string-array>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="device_status">Hold the flash button on the sub-1 and connect the device.\nOnce completed, grant permission to access de USB BOOTLOADER device.</string>
+
+</resources>
