@@ -38,7 +38,7 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     public native int getBufferLength();
     public native byte[] pollData(int length);
     public native void clearBuffer();
-    public native Object[] compressData(int rangeStart, int rangeEnd, int numberBins);
+    public native Object[] compressDataBits(int rangeStart, int rangeEnd, int numberBins);
     public native boolean getRecordingContinuous();
     public native void setRecordingContinuous(boolean recording);
 

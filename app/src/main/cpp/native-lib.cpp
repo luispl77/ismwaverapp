@@ -129,7 +129,11 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferStatus(J
 
 
 
-JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressData(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
+
+
+JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
+    rangeStart *= 8; // Convert byte range to bit range
+    rangeEnd *= 8;
     float totalPointsInRange = rangeEnd - rangeStart;
     std::vector<float> timeValues;
     std::vector<float> dataValues;
@@ -137,34 +141,48 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
     jclass floatArrayClass = env->FindClass("[F");
     jobjectArray result = env->NewObjectArray(2, floatArrayClass, nullptr);
 
-    if (totalPointsInRange <= numberBins) {
+    if (totalPointsInRange <= numberBins*2) {
+        // Less data than bins, simply convert each bit to a point
         for (int i = rangeStart; i < rangeEnd; ++i) {
-            if (i < dataBuffer.size()) {
-            timeValues.push_back(static_cast<float>(i));
-            dataValues.push_back(static_cast<float>(dataBuffer[i] & 0xFF));
+            int byteIndex = i / 8;
+            int bitIndex = i % 8;
+            if (byteIndex < dataBuffer.size()) {
+                uint8_t bit = (dataBuffer[byteIndex] >> bitIndex) & 1;
+                timeValues.push_back(static_cast<float>(i / 8.0f));
+                dataValues.push_back(bit ? 255.0f : 0.0f);
             }
         }
     } else {
-        float binWidth = totalPointsInRange / (float)numberBins;
-        for (int i = 0; i < numberBins; ++i) {
-            int binStart = (int) (rangeStart + i * binWidth);
-            int binEnd = (int) (binStart + binWidth);
+        // More data than bins, compress using min-max in each bin
+        float binWidth = totalPointsInRange / static_cast<float>(numberBins);
+        for (int bin = 0; bin < numberBins; ++bin) {
+            int binStart = static_cast<int>(rangeStart + bin * binWidth);
+            int binEnd = static_cast<int>(binStart + binWidth);
             binEnd = std::min(binEnd, rangeEnd);
-            int maxVal = INT_MIN;
-            int minVal = INT_MAX;
 
-            for (int j = binStart; j < binEnd; ++j) {
-                if (j < dataBuffer.size()) {
-                    int val = dataBuffer[j] & 0xFF;
-                    maxVal = std::max(maxVal, val);
-                    minVal = std::min(minVal, val);
+            bool foundData = false;
+            float minVal = 255.0f;
+            float maxVal = 0.0f;
+
+            for (int i = binStart; i < binEnd; ++i) {
+                int byteIndex = i / 8;
+                int bitIndex = i % 8;
+                if (byteIndex < dataBuffer.size()) {
+                    uint8_t bit = (dataBuffer[byteIndex] >> bitIndex) & 1;
+                    float value = bit ? 255.0f : 0.0f;
+                    minVal = std::min(minVal, value);
+                    maxVal = std::max(maxVal, value);
+                    foundData = true;
                 }
             }
 
-            timeValues.push_back(static_cast<float>(binStart));
-            dataValues.push_back(static_cast<float>(minVal));
-            timeValues.push_back(static_cast<float>(binEnd - 1));
-            dataValues.push_back(static_cast<float>(maxVal));
+            if (foundData) {
+                // Store min and max as two points for the current bin
+                timeValues.push_back(static_cast<float>(binStart / 8.0f));
+                dataValues.push_back(minVal);
+                timeValues.push_back(static_cast<float>((binEnd - 1) / 8.0f));
+                dataValues.push_back(maxVal);
+            }
         }
     }
 
@@ -181,6 +199,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
 
     return result;
 }
+
 
 
 

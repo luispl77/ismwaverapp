@@ -147,7 +147,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
         });
 
         binding.startRecordingButton.setOnClickListener(v -> {
-            String contCommand = "cont";
+            String contCommand = "raw";
             byte[] byteArray = contCommand.getBytes();
             serialService.setRecordingContinuous(true);
             serialService.write(byteArray);
@@ -214,6 +214,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
             @Override
             public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
                 float newZoomLevel = chart.getScaleX();
+
                 if (Math.abs(newZoomLevel - currentZoomLevel) >= (newZoomLevel/10)) {
                     // Zoom level changed significantly
                     currentZoomLevel = newZoomLevel;
@@ -455,10 +456,12 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
     private LineDataSet compressDataAndGetDataSet(int rangeStart, int rangeEnd, int numberBins) {
         // Call the native method
-        Object[] result = (Object[]) serialService.compressData(rangeStart, rangeEnd, numberBins);
+        Object[] result = (Object[]) serialService.compressDataBits(rangeStart, rangeEnd, numberBins);
 
         float[] timeValues = (float[]) result[0];
         float[] dataValues = (float[]) result[1];
+
+        Log.i("compressed", dataValues.length + " values");
 
         List<Entry> entries = new ArrayList<>();
         for (int i = 0; i < timeValues.length; i++) {
