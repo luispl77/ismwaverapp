@@ -124,20 +124,9 @@ public class RawModeFragment extends Fragment implements CommandSender {
             int bufferLength = serialService.getBufferLength();
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
-            String contCommand = "tran";
-            byte[] byteArray = contCommand.getBytes();
-            serialService.write(byteArray);
-
-
-
-            //transmitTestBuffer();
+            //sendStartTransmissionCommand();
             transmitTeslaBuffer();
-
-            contCommand = "ssss";
-            byteArray = contCommand.getBytes();
-            serialService.write(byteArray);
-
-            //transmitSSES();
+            //sendStopTransmissionCommand();
         });
 
         binding.clearBufferButton.setOnClickListener(v -> {
@@ -172,7 +161,11 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
 
         binding.showPulseEdgesButton.setOnClickListener(v -> {
-            toggleVerticalLinesOnChart(serialService.findPulseEdges(32, 10, 4));
+            //toggleVerticalLinesOnChart(serialService.findPulseEdges(32, 10, 4));
+            //sendStopTransmissionCommand();
+            String contCommand = "ssss";
+            byte[] byteArray = contCommand.getBytes();
+            serialService.write(byteArray);
         });
 
         initChart();
@@ -261,100 +254,75 @@ public class RawModeFragment extends Fragment implements CommandSender {
         return root;
     }
 
-    private void transmitTestBuffer() {
-        try {
-            Thread.sleep(100); // Delay of 1 ms between each write
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Handle thread interruption
-        }
-
-        byte[] dataBuffer = new byte[4096*2];
-        int dutySamples = 32;
-        //fillBufferWithPattern(dataBuffer);
-        for (int i = 0; i < dataBuffer.length; i += dutySamples) {
-            byte fillValue = (i / dutySamples) % 2 == 0 ? (byte) 124 : (byte) 48;
-            Arrays.fill(dataBuffer, i, i + dutySamples, fillValue);
-        }
-        logBuffer(dataBuffer); // Log the buffer content
 
 
-        int packetSize = 110; //80 bytes/ms, for 12.5us sample rate, 1 byte per sample
-        for (int i = 0; i < dataBuffer.length; i += packetSize) {
-            byte[] packet = Arrays.copyOfRange(dataBuffer, i, i + packetSize);
-            serialService.write(packet); // Write a 64-byte packet
-
-            delayMicroseconds(1000);
-            /*try {
-                Thread.sleep(1); // Delay of 1 ms between each write
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // Handle thread interruption
-            }*/
-        }
-
-        /*byte[] packet = Arrays.copyOfRange(dataBuffer, 0, 32);
-        logBuffer(packet);
-        serialService.write(packet);*/
-    }
-
-    public void delayMicroseconds(long microseconds) {
-        long start = System.nanoTime();
-        long end = start + (microseconds * 1000); // Convert microseconds to nanoseconds
-        while (System.nanoTime() < end) {
-            // Busy wait
-        }
-    }
 
     private void transmitTeslaBuffer(){
 
-        try {
-            Thread.sleep(100); // Delay of 1 ms between each write
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Handle thread interruption
-        }
+
 
         byte [] teslaSignal = {(byte)0xAA, (byte)0xAA, (byte)0xAA, (byte)0x8A, (byte)0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
-        // Calculate the required buffer size (8 bits per byte * 32 bytes per bit)
-        int bytesPerBit = 32;
-        int bufferSize = teslaSignal.length * 8 * bytesPerBit;
+        int samplesPerBit = 40; // 100 samples per bit
+        int bufferSize = teslaSignal.length * 8 * samplesPerBit;
 
-        // Initialize the data buffer
-        byte[] dataBuffer = new byte[bufferSize];
+        byte[] dataBuffer = new byte[bufferSize / 8 + (bufferSize % 8 != 0 ? 1 : 0)]; // Each byte holds 8 bits
+        int bitIndex = 0;
 
-        // Index to keep track of where we are in the dataBuffer
-        int dataBufferIndex = 0;
-
-        // Loop through each byte of the teslaSignal
         for (byte teslaByte : teslaSignal) {
-            // Loop through each bit of the current byte (starting from the MSB)
-            for (int bitIndex = 7; bitIndex >= 0; bitIndex--) {
-                // Determine if the current bit is a 1 or 0
-                boolean isHigh = ((teslaByte >> bitIndex) & 1) == 1;
-
-                // Fill 40 bytes with the appropriate value (124 for high, 48 for low)
-                byte fillValue = isHigh ? (byte) 124 : (byte) 48;
-                Arrays.fill(dataBuffer, dataBufferIndex, dataBufferIndex + bytesPerBit, fillValue);
-                dataBufferIndex += bytesPerBit; // Move to the next slot in the data buffer
+            for (int i = 7; i >= 0; i--) {
+                boolean isHigh = ((teslaByte >> i) & 1) == 1;
+                for (int j = 0; j < samplesPerBit; j++) {
+                    if (isHigh) {
+                        dataBuffer[bitIndex / 8] |= (1 << (7 - bitIndex % 8)); // Set bit
+                    } else {
+                        dataBuffer[bitIndex / 8] &= ~(1 << (7 - bitIndex % 8)); // Clear bit
+                    }
+                    bitIndex++;
+                }
             }
         }
 
+        /*for (int i = 0; i < dataBuffer.length; i+=8) {
+            // Set to 0xFF (255) for odd indices, 0x00 for even indices
+            dataBuffer[i] = 0x00;
+            dataBuffer[i+1] = (byte) 0x00;
+            dataBuffer[i+2] = (byte) 0x00;
+            dataBuffer[i+3] = (byte) 0x00;
 
-        //logBuffer(dataBuffer);
+            dataBuffer[i+4] = (byte) 0xFF;
+            dataBuffer[i+5] = (byte) 0xFF;
+            dataBuffer[i+6] = (byte) 0xFF;
+            dataBuffer[i+7] = (byte) 0xFF;
+        }*/
+        logBuffer(dataBuffer);
+
+        serialService.clearBuffer();
+
+        sendStartTransmissionCommand(dataBuffer.length*8); //send in number of samples for the device to know the size and when it is processed
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
 
-        int packetSize = 80;
+        int packetSize = 13;
         long startTime = System.nanoTime();
         final long period = 1000 * 1000;
+
         for (int i = 0; i < dataBuffer.length; i += packetSize) {
-            int bufferStatus = serialService.getBufferStatus(); // Get buffer status from STM32
-            int bufferLength = serialService.getBufferStatus(); // Get buffer status from STM32
-            if(bufferStatus == -1) Log.i("bufstatus", "not found" + "   buflen: " + serialService.getBufferLength());
-            else Log.i("bufstatus", "" + bufferStatus  + "   buflen: " + serialService.getBufferLength());
-            packetSize = adjustTransmissionSimple(packetSize, bufferStatus);
-            // Calculate the next time to send the packet
             startTime += period;
-            //byte[] packet = Arrays.copyOfRange(dataBuffer, i, Math.min(i + packetSize, dataBuffer.length));
             byte[] packet = Arrays.copyOfRange(dataBuffer, i, i + packetSize);
-            serialService.write(packet); // Write the packet
+
+            int bufferStatus = getLogStatus();
+            if(bufferStatus < 300){
+                serialService.write(packet); // Write the packet
+            }
+            else {
+                serialService.write(packet); // Write the packet
+                startTime += period;
+            }
             while (System.nanoTime() < startTime) {
                 // Busy wait
             }
@@ -362,54 +330,61 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
     }
 
-    private int adjustTransmissionRate(int currentPacketSize, int bufferStatus) {
-        final int targetBuffer = 384; // Target buffer level
-        final int bufferLowerThreshold = 100; // Lower threshold for more aggressive adjustment
-        final int bufferUpperThreshold = 200; // Upper threshold for standard adjustment
-        final int minPacketSize = 40;  // Minimum packet size
-        final int maxPacketSize = 160; // Maximum packet size
-        final double aggressiveAdjustmentFactor = 0.5; // Factor for aggressive adjustment
-        final double standardAdjustmentFactor = 0.2; // Factor for standard adjustment
-
-        int bufferDiff = targetBuffer - bufferStatus;
-        double adjustmentFactor = (bufferStatus < targetBuffer - bufferLowerThreshold) ?
-                aggressiveAdjustmentFactor : standardAdjustmentFactor;
-
-        // Adjust only if the buffer status is outside the defined thresholds
-        if (Math.abs(bufferDiff) > (bufferStatus < targetBuffer - bufferLowerThreshold ?
-                bufferLowerThreshold : bufferUpperThreshold)) {
-            int sizeChange = (int) (bufferDiff * adjustmentFactor);
-            currentPacketSize += sizeChange;
-
-            // Clamp the packet size to min/max bounds
-            currentPacketSize = Math.max(minPacketSize, Math.min(maxPacketSize, currentPacketSize));
-        }
-        return currentPacketSize;
-    }
-
-    private int adjustTransmissionSimple(int currentPacketSize, int bufferStatus) {
-        final int targetBuffer = 384; // Target buffer level
-        final int bufferLowerThreshold = 100; // Lower threshold for more aggressive adjustment
-        final int bufferUpperThreshold = targetBuffer + (384-100); // Upper threshold for standard adjustment
-        if(bufferStatus < bufferLowerThreshold){
-            return 160;
-        }
-        else if(bufferStatus > bufferUpperThreshold){
-            return 40;
-        }
-        return 80;
-    }
-
-
-
 
     private void logBuffer(byte[] buffer) {
         StringBuilder sb = new StringBuilder();
         for (byte b : buffer) {
-            sb.append(b == 124 ? "1" : "0");
+            for (int i = 7; i >= 0; i--) {
+                sb.append((b >> i) & 1); // Append '1' for set bit, '0' for clear bit
+            }
         }
         Log.i("BufferLog", sb.toString());
+        sb = new StringBuilder();
+        for (byte b : buffer) {
+            sb.append(String.format("%02X ", b));
+        }
+        Log.i("BufferLog", sb.toString());
+        Log.i("BufferLog", "length: " + buffer.length*8);
     }
+
+
+    private int getLogStatus(){
+        int bufferStatus = serialService.getStatusNumber(); // Get buffer status from STM32
+        if(bufferStatus == -1){
+            Log.i("bufstatus", "not found" + "   buflen: " + serialService.getBufferLength());
+        }
+        else{
+            Log.i("bufstatus", "" + bufferStatus  + "   buflen: " + serialService.getBufferLength());
+        }
+        return bufferStatus;
+    }
+
+
+    private void sendStartTransmissionCommand(int size) {
+        // Convert "tran" string to bytes
+        String contCommand = "tran";
+        byte[] commandBytes = contCommand.getBytes();
+
+        // Convert size to two bytes (little-endian)
+        byte sizeLow = (byte) (size & 0xFF);        // Lower byte
+        byte sizeHigh = (byte) ((size >> 8) & 0xFF); // Higher byte
+
+        // Create a byte array to hold the command and the size
+        byte[] byteArray = new byte[commandBytes.length + 2];
+
+        // Copy the command bytes into the array
+        System.arraycopy(commandBytes, 0, byteArray, 0, commandBytes.length);
+
+        // Append the size bytes
+        byteArray[commandBytes.length] = sizeLow;   // Append the lower byte of the size
+        byteArray[commandBytes.length + 1] = sizeHigh; // Append the higher byte of the size
+
+        // Send the byte array over the serial connection
+        serialService.write(byteArray);
+    }
+
+
+
 
 
 

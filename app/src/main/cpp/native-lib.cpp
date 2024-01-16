@@ -117,15 +117,39 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferStatus(J
         std::string packetHeader(lastPacket.begin(), lastPacket.begin() + HEADER_SIZE);
         if (packetHeader == HEADER) {
             // Parse the container size
-            uint16_t containerSize = (static_cast<uint8_t>(lastPacket[2]) << 8) | static_cast<uint8_t>(lastPacket[3]);
-            if(containerSize < 1000)
-                return static_cast<jint>(containerSize);
+            uint16_t status = (static_cast<uint8_t>(lastPacket[2]) << 8) | static_cast<uint8_t>(lastPacket[3]);
+            return static_cast<jint>(status);
         }
     }
 
     // Return a default value if the correct packet is not found
     return -1;
 }
+
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(JNIEnv *env, jobject) {
+    const std::string HEADER = "BS";
+    const size_t HEADER_SIZE = HEADER.size();
+    const size_t STATUS_SIZE = 2; // Assuming status number is 2 bytes
+
+    // Search for the header from the end of the buffer
+    for (size_t i = dataBuffer.size(); i >= HEADER_SIZE + STATUS_SIZE; --i) {
+        std::string currentHeader(dataBuffer.begin() + i - HEADER_SIZE - STATUS_SIZE, dataBuffer.begin() + i - STATUS_SIZE);
+        if (currentHeader == HEADER) {
+            // Parse the status number
+            uint16_t status = (static_cast<uint8_t>(dataBuffer[i - STATUS_SIZE]) << 8) | static_cast<uint8_t>(dataBuffer[i - STATUS_SIZE + 1]);
+
+            // Clear the buffer from the end of the parsed packet to the end of the buffer
+            dataBuffer.erase(dataBuffer.begin() + i, dataBuffer.end());
+
+            return static_cast<jint>(status);
+        }
+    }
+
+    // Return a default value if the correct packet is not found
+    return -1;
+}
+
+
 
 
 
