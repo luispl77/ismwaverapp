@@ -46,6 +46,8 @@ public class SerialService extends Service implements SerialInputOutputManager.L
 
     public native int getStatusNumber();
 
+    public native byte[] getBufferRange(int start, int end);
+
 
 
     public class LocalBinder extends Binder {

@@ -124,9 +124,9 @@ public class RawModeFragment extends Fragment implements CommandSender {
             int bufferLength = serialService.getBufferLength();
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
-            //sendStartTransmissionCommand();
-            transmitTeslaBuffer();
-            //sendStopTransmissionCommand();
+            transmitBuffer();
+            //transmitTeslaBuffer();
+
         });
 
         binding.clearBufferButton.setOnClickListener(v -> {
@@ -163,9 +163,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
         binding.showPulseEdgesButton.setOnClickListener(v -> {
             //toggleVerticalLinesOnChart(serialService.findPulseEdges(32, 10, 4));
             //sendStopTransmissionCommand();
-            String contCommand = "ssss";
-            byte[] byteArray = contCommand.getBytes();
-            serialService.write(byteArray);
+            transmitTeslaBuffer();
         });
 
         initChart();
@@ -254,6 +252,40 @@ public class RawModeFragment extends Fragment implements CommandSender {
         return root;
     }
 
+    private void transmitBuffer() {
+        //serialService.clearBuffer();
+        int nativeBufferSize = serialService.getBufferLength(); // Existing JNI method to get the native buffer size
+        sendStartTransmissionCommand(nativeBufferSize);
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        int packetSize = 13;
+        long startTime = System.nanoTime();
+        final long period = 1000 * 1000;
+
+        for (int i = 0; i < nativeBufferSize; i += packetSize) {
+            int end = Math.min(i + packetSize, nativeBufferSize);
+            byte[] packet = serialService.getBufferRange(i, end); // Native method to get a range of the buffer
+
+            startTime += period;
+            int bufferStatus = getLogStatus();
+            if (bufferStatus < 300) {
+                serialService.write(packet);
+            } else {
+                serialService.write(packet);
+                startTime += period;
+            }
+            while (System.nanoTime() < startTime) {
+                // Busy wait
+            }
+        }
+    }
+
+
 
 
 
@@ -296,9 +328,9 @@ public class RawModeFragment extends Fragment implements CommandSender {
         }*/
         logBuffer(dataBuffer);
 
-        serialService.clearBuffer();
+        //serialService.clearBuffer();
 
-        sendStartTransmissionCommand(dataBuffer.length*8); //send in number of samples for the device to know the size and when it is processed
+        sendStartTransmissionCommand(dataBuffer.length); //send in number of samples for the device to know the size and when it is processed
 
         try {
             Thread.sleep(400);
@@ -365,23 +397,27 @@ public class RawModeFragment extends Fragment implements CommandSender {
         String contCommand = "tran";
         byte[] commandBytes = contCommand.getBytes();
 
-        // Convert size to two bytes (little-endian)
-        byte sizeLow = (byte) (size & 0xFF);        // Lower byte
-        byte sizeHigh = (byte) ((size >> 8) & 0xFF); // Higher byte
+        // Convert size to four bytes (little-endian)
+        byte[] sizeBytes = new byte[] {
+                (byte) (size & 0xFF),                // Least significant byte (LSB)
+                (byte) ((size >> 8) & 0xFF),
+                (byte) ((size >> 16) & 0xFF),
+                (byte) ((size >> 24) & 0xFF)         // Most significant byte (MSB)
+        };
 
         // Create a byte array to hold the command and the size
-        byte[] byteArray = new byte[commandBytes.length + 2];
+        byte[] byteArray = new byte[commandBytes.length + 4];
 
         // Copy the command bytes into the array
         System.arraycopy(commandBytes, 0, byteArray, 0, commandBytes.length);
 
         // Append the size bytes
-        byteArray[commandBytes.length] = sizeLow;   // Append the lower byte of the size
-        byteArray[commandBytes.length + 1] = sizeHigh; // Append the higher byte of the size
+        System.arraycopy(sizeBytes, 0, byteArray, commandBytes.length, sizeBytes.length);
 
         // Send the byte array over the serial connection
         serialService.write(byteArray);
     }
+
 
 
 

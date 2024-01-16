@@ -86,22 +86,33 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearBuffer(JNIEn
 
 
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JNIEnv *env, jobject, jint length) {
-int lenToPoll = std::min(static_cast<int>(dataBuffer.size()), length);
-jbyteArray returnArray = env->NewByteArray(lenToPoll);
+    int lenToPoll = std::min(static_cast<int>(dataBuffer.size()), length);
+    jbyteArray returnArray = env->NewByteArray(lenToPoll);
 
-if (lenToPoll > 0) {
-auto startIt = dataBuffer.begin();
-auto endIt = startIt + lenToPoll;
+    if (lenToPoll > 0) {
+    auto startIt = dataBuffer.begin();
+    auto endIt = startIt + lenToPoll;
 
-// Copy the data into a temporary buffer
-std::vector<char> tempBuffer(startIt, endIt);
-env->SetByteArrayRegion(returnArray, 0, lenToPoll, reinterpret_cast<const jbyte*>(tempBuffer.data()));
+    // Copy the data into a temporary buffer
+    std::vector<char> tempBuffer(startIt, endIt);
+    env->SetByteArrayRegion(returnArray, 0, lenToPoll, reinterpret_cast<const jbyte*>(tempBuffer.data()));
 
-// Remove the polled data from the buffer
-dataBuffer.erase(startIt, endIt);
+    // Remove the polled data from the buffer
+    dataBuffer.erase(startIt, endIt);
 }
 
 return returnArray;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
+    int lenToCopy = end - start;
+    if (lenToCopy <= 0 || start < 0 || start >= dataBuffer.size() || end > dataBuffer.size()) {
+        return env->NewByteArray(0); // Return an empty array if parameters are invalid
+    }
+
+    jbyteArray returnArray = env->NewByteArray(lenToCopy);
+    env->SetByteArrayRegion(returnArray, 0, lenToCopy, reinterpret_cast<const jbyte*>(&dataBuffer[start]));
+    return returnArray;
 }
 
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferStatus(JNIEnv *env, jobject) {
