@@ -2,9 +2,20 @@
 #include <string>
 #include <vector>
 
-std::vector<char> dataBuffer;
+
 
 bool isRecordingContinuous = false;
+
+enum Mode {
+    TRANSMIT,
+    RECEIVE,
+    TERMINAL
+};
+
+Mode currentMode = TERMINAL;  // Default mode
+std::vector<char> dataBuffer;
+std::vector<char> commandBuffer;
+
 
 extern "C" {
 // Define constants for HIGH and LOW states
@@ -48,12 +59,12 @@ JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findPulseEd
     return result;
 }
 
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_setRecordingContinuous(JNIEnv *env, jobject, jboolean recording) {
-    isRecordingContinuous = recording;
-}
 
 JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_SerialService_getRecordingContinuous(JNIEnv *env, jobject) {
-    return isRecordingContinuous;
+    return currentMode == RECEIVE;
+}
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_setMode(JNIEnv *env, jobject, jint mode) {
+    currentMode = Mode(mode);
 }
 
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(JNIEnv *env, jobject javaService, jbyteArray data) {
@@ -63,34 +74,41 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_sendIntentToTermi
     env->CallVoidMethod(javaService, sendIntentMethod, data);
 }
 
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
 
+
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
 
-    dataBuffer.insert(dataBuffer.end(), bufferPtr, bufferPtr + lengthOfArray);
+    std::vector<char>& targetBuffer = (currentMode == RECEIVE) ? dataBuffer : commandBuffer;
+    targetBuffer.insert(targetBuffer.end(), bufferPtr, bufferPtr + lengthOfArray);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 
-    if (!isRecordingContinuous) {
+    if (currentMode == TERMINAL) {
         Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(env, serialService, data);
     }
 }
 
-JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferLength(JNIEnv *env, jobject) {
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getCommandBufferLength(JNIEnv *env, jobject) {
+    return static_cast<jint>(commandBuffer.size());
+}
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getDataBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(dataBuffer.size());
 }
-
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearBuffer(JNIEnv *env, jobject) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearDataBuffer(JNIEnv *env, jobject) {
     dataBuffer.clear();
+}
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearCommandBuffer(JNIEnv *env, jobject) {
+    commandBuffer.clear();
 }
 
 
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JNIEnv *env, jobject, jint length) {
-    int lenToPoll = std::min(static_cast<int>(dataBuffer.size()), length);
+    int lenToPoll = std::min(static_cast<int>(commandBuffer.size()), length);
     jbyteArray returnArray = env->NewByteArray(lenToPoll);
 
     if (lenToPoll > 0) {
-    auto startIt = dataBuffer.begin();
+    auto startIt = commandBuffer.begin();
     auto endIt = startIt + lenToPoll;
 
     // Copy the data into a temporary buffer
@@ -98,7 +116,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JN
     env->SetByteArrayRegion(returnArray, 0, lenToPoll, reinterpret_cast<const jbyte*>(tempBuffer.data()));
 
     // Remove the polled data from the buffer
-    dataBuffer.erase(startIt, endIt);
+    commandBuffer.erase(startIt, endIt);
 }
 
 return returnArray;
@@ -115,27 +133,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRa
     return returnArray;
 }
 
-JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferStatus(JNIEnv *env, jobject) {
-    const int PACKET_SIZE = 64;
-    const int HEADER_SIZE = 2;
-    const std::string HEADER = "BS";
-
-    if (dataBuffer.size() >= PACKET_SIZE) {
-        // Get the last 64 bytes from the buffer
-        std::vector<char> lastPacket(dataBuffer.end() - PACKET_SIZE, dataBuffer.end());
-
-        // Check for the header
-        std::string packetHeader(lastPacket.begin(), lastPacket.begin() + HEADER_SIZE);
-        if (packetHeader == HEADER) {
-            // Parse the container size
-            uint16_t status = (static_cast<uint8_t>(lastPacket[2]) << 8) | static_cast<uint8_t>(lastPacket[3]);
-            return static_cast<jint>(status);
-        }
-    }
-
-    // Return a default value if the correct packet is not found
-    return -1;
-}
 
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(JNIEnv *env, jobject) {
     const std::string HEADER = "BS";
@@ -143,14 +140,14 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     const size_t STATUS_SIZE = 2; // Assuming status number is 2 bytes
 
     // Search for the header from the end of the buffer
-    for (size_t i = dataBuffer.size(); i >= HEADER_SIZE + STATUS_SIZE; --i) {
-        std::string currentHeader(dataBuffer.begin() + i - HEADER_SIZE - STATUS_SIZE, dataBuffer.begin() + i - STATUS_SIZE);
+    for (size_t i = commandBuffer.size(); i >= HEADER_SIZE + STATUS_SIZE; --i) {
+        std::string currentHeader(commandBuffer.begin() + i - HEADER_SIZE - STATUS_SIZE, commandBuffer.begin() + i - STATUS_SIZE);
         if (currentHeader == HEADER) {
             // Parse the status number
-            uint16_t status = (static_cast<uint8_t>(dataBuffer[i - STATUS_SIZE]) << 8) | static_cast<uint8_t>(dataBuffer[i - STATUS_SIZE + 1]);
+            uint16_t status = (static_cast<uint8_t>(commandBuffer[i - STATUS_SIZE]) << 8) | static_cast<uint8_t>(commandBuffer[i - STATUS_SIZE + 1]);
 
             // Clear the buffer from the end of the parsed packet to the end of the buffer
-            dataBuffer.erase(dataBuffer.begin() + i, dataBuffer.end());
+            commandBuffer.erase(commandBuffer.begin() + i, commandBuffer.end());
 
             return static_cast<jint>(status);
         }
@@ -159,12 +156,6 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     // Return a default value if the correct packet is not found
     return -1;
 }
-
-
-
-
-
-
 
 JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
     rangeStart *= 8; // Convert byte range to bit range

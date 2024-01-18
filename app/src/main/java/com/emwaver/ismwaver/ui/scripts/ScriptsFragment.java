@@ -175,7 +175,7 @@ public class ScriptsFragment extends Fragment implements CommandSender {
         long startTime = System.currentTimeMillis(); // Start time for timeout
 
         // Wait for the response with timeout
-        while (isServiceBound && serialService.getBufferLength() < expectedResponseSize) {
+        while (isServiceBound && serialService.getCommandBufferLength() < expectedResponseSize) {
             if (System.currentTimeMillis() - startTime > timeoutMillis) {
                 return null; // Timeout occurred
             }
@@ -191,7 +191,7 @@ public class ScriptsFragment extends Fragment implements CommandSender {
         byte[] response = new byte[expectedResponseSize];
         response = serialService.pollData(expectedResponseSize);
 
-        serialService.clearBuffer(); // Optionally clear the queue after processing
+        serialService.clearCommandBuffer(); // Optionally clear the queue after processing
         return response;
     }
 

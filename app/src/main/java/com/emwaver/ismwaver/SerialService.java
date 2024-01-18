@@ -35,16 +35,19 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     private UsbSerialPort finalPort = null;
     private final IBinder binder = new LocalBinder();
     private native void addToBuffer(byte[] data);
-    public native int getBufferLength();
+    public native int getDataBufferLength();
+    public native int getCommandBufferLength();
     public native byte[] pollData(int length);
-    public native void clearBuffer();
+    public native void clearDataBuffer();
+    public native void clearCommandBuffer();
     public native Object[] compressDataBits(int rangeStart, int rangeEnd, int numberBins);
     public native boolean getRecordingContinuous();
-    public native void setRecordingContinuous(boolean recording);
 
     public native long [] findPulseEdges(int samplesPerSymbol, int errorTolerance, int maxLowPulseMultiplier);
 
     public native int getStatusNumber();
+
+    public native void setMode(int mode);
 
     public native byte[] getBufferRange(int start, int end);
 
@@ -56,6 +59,8 @@ public class SerialService extends Service implements SerialInputOutputManager.L
             return SerialService.this;
         }
     }
+
+    // default buffer is the dataBuffer
 
 
     public void write(byte[] bytes){

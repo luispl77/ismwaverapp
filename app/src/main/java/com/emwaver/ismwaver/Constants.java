@@ -23,6 +23,12 @@ public class Constants {
     // Any other constant values that are used across multiple classes
     public static final int USB_BAUD_RATE = 115200;
 
+    public static final int TRANSMIT = 0;
+
+    public static final int RECEIVE = 0;
+
+    public static final int TERMINAL = 0;
+
     // Private constructor to prevent instantiation
     private Constants() {
         // This utility class is not publicly instantiable
