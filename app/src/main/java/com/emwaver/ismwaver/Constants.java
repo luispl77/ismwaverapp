@@ -25,9 +25,9 @@ public class Constants {
 
     public static final int TRANSMIT = 0;
 
-    public static final int RECEIVE = 0;
+    public static final int RECEIVE = 1;
 
-    public static final int TERMINAL = 0;
+    public static final int TERMINAL = 2;
 
     // Private constructor to prevent instantiation
     private Constants() {

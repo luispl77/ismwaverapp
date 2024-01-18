@@ -265,9 +265,10 @@ public class RawModeFragment extends Fragment implements CommandSender {
             throw new RuntimeException(e);
         }
 
-        int packetSize = 13;
+        int packetSize = 48;
         long startTime = System.nanoTime();
-        final long period = 1000 * 1000;
+        final long period = 4000 * 1000;
+        final long flow_time_delta = 1000 * 1000;
 
         for (int i = 0; i < nativeBufferSize; i += packetSize) {
             int end = Math.min(i + packetSize, nativeBufferSize);
@@ -275,16 +276,21 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
             startTime += period;
             int bufferStatus = getLogStatus();
-            if (bufferStatus < 300) {
+            if (bufferStatus > 200 && bufferStatus < 300) {
                 serialService.write(packet);
-            } else {
+            } else if(bufferStatus > 300){
                 serialService.write(packet);
-                startTime += period;
+                startTime += flow_time_delta; //write slower than the processing speed
+            }
+            else if(bufferStatus < 300){
+                serialService.write(packet);
+                startTime -= flow_time_delta; //write faster than the processing speed
             }
             while (System.nanoTime() < startTime) {
                 // Busy wait
             }
         }
+        serialService.clearCommandBuffer();
     }
 
 
