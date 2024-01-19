@@ -18,64 +18,58 @@ std::vector<char> commandBuffer;
 
 
 extern "C" {
-// Define constants for HIGH and LOW states
-const char HIGH = 124;
-const char LOW = 48;
 
-JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findPulseEdges(
-        JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance, jint maxLowPulseMultiplier) {
+JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findPulseEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance, jint maxLowPulseMultiplier) {
 
     std::vector<jlong> edges;
-    char lastState = dataBuffer[0];
+    bool lastState = (dataBuffer[0] & 0x80) != 0; // Initial state is the most significant bit of the first byte
     jlong edgePosition = 0;
     jlong lastEdgePosition = 0;
 
-    for (jlong i = 0; i < dataBuffer.size(); ++i) {
-        if (dataBuffer[i] != lastState) {
-            edgePosition = i;
-            jlong pulseLength = edgePosition - lastEdgePosition;
+    for (jlong byteIndex = 0; byteIndex < dataBuffer.size(); ++byteIndex) {
+        char currentByte = dataBuffer[byteIndex];
+        for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
+            bool currentState = (currentByte & (1 << bitIndex)) != 0;
 
-            bool validPulse = false;
-            if (lastState == HIGH) {
-                jlong diff = std::abs(pulseLength - samplesPerSymbol);
-                validPulse = (diff <= errorTolerance || pulseLength % samplesPerSymbol <= errorTolerance);
-            } else if (lastState == LOW) {
-                validPulse = (pulseLength >= samplesPerSymbol &&
-                              pulseLength <= samplesPerSymbol * maxLowPulseMultiplier);
-            }
+            if (currentState != lastState) {
+                edgePosition = byteIndex * 8 + (7 - bitIndex);
+                jlong pulseLength = edgePosition - lastEdgePosition;
 
-            if (validPulse) {
-                edges.push_back(edgePosition);
-                lastState = dataBuffer[i];
+                bool validPulse;
+                if (lastState) { // lastState == HIGH
+                    jlong diff = std::abs(pulseLength - samplesPerSymbol);
+                    validPulse = (diff <= errorTolerance || pulseLength % samplesPerSymbol <= errorTolerance);
+                } else { // lastState == LOW
+                    validPulse = (pulseLength >= samplesPerSymbol &&
+                                  pulseLength <= samplesPerSymbol * maxLowPulseMultiplier);
+                }
+
+                if (validPulse) {
+                    edges.push_back(edgePosition);
+                    lastState = currentState;
+                }
+                lastEdgePosition = edgePosition;
             }
-            lastEdgePosition = edgePosition;
         }
     }
 
-    // Convert std::vector<jlong> to jlongArray for return
     jlongArray result = env->NewLongArray(edges.size());
     env->SetLongArrayRegion(result, 0, edges.size(), edges.data());
 
     return result;
 }
-
-
 JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_SerialService_getRecordingContinuous(JNIEnv *env, jobject) {
     return currentMode == RECEIVE;
 }
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_setMode(JNIEnv *env, jobject, jint mode) {
     currentMode = Mode(mode);
 }
-
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(JNIEnv *env, jobject javaService, jbyteArray data) {
     jclass serviceClass = env->GetObjectClass(javaService);
     jmethodID sendIntentMethod = env->GetMethodID(serviceClass, "sendIntentToTerminal", "([B)V");
 
     env->CallVoidMethod(javaService, sendIntentMethod, data);
 }
-
-
-
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
@@ -88,7 +82,6 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEn
         Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(env, serialService, data);
     }
 }
-
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getCommandBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(commandBuffer.size());
 }
@@ -101,8 +94,6 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearDataBuffer(J
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearCommandBuffer(JNIEnv *env, jobject) {
     commandBuffer.clear();
 }
-
-
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JNIEnv *env, jobject, jint length) {
     int lenToPoll = std::min(static_cast<int>(commandBuffer.size()), length);
     jbyteArray returnArray = env->NewByteArray(lenToPoll);
@@ -121,7 +112,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JN
 
 return returnArray;
 }
-
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
     int lenToCopy = end - start;
     if (lenToCopy <= 0 || start < 0 || start >= dataBuffer.size() || end > dataBuffer.size()) {
@@ -132,8 +122,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRa
     env->SetByteArrayRegion(returnArray, 0, lenToCopy, reinterpret_cast<const jbyte*>(&dataBuffer[start]));
     return returnArray;
 }
-
-
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(JNIEnv *env, jobject) {
     const std::string HEADER = "BS";
     const size_t HEADER_SIZE = HEADER.size();
@@ -156,11 +144,11 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     // Return a default value if the correct packet is not found
     return -1;
 }
-
 JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
     rangeStart *= 8; // Convert byte range to bit range
     rangeEnd *= 8;
     float totalPointsInRange = rangeEnd - rangeStart;
+    float timePerSample = 1/8.0f; // 10 microseconds
     std::vector<float> timeValues;
     std::vector<float> dataValues;
 
@@ -174,7 +162,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
             int bitIndex = i % 8;
             if (byteIndex < dataBuffer.size()) {
                 uint8_t bit = (dataBuffer[byteIndex] >> bitIndex) & 1;
-                timeValues.push_back(static_cast<float>(i / 8.0f));
+                timeValues.push_back(static_cast<float>(i * timePerSample));
                 dataValues.push_back(bit ? 255.0f : 0.0f);
             }
         }
@@ -204,9 +192,9 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
 
             if (foundData) {
                 // Store min and max as two points for the current bin
-                timeValues.push_back(static_cast<float>(binStart / 8.0f));
+                timeValues.push_back(static_cast<float>(binStart * timePerSample));
                 dataValues.push_back(minVal);
-                timeValues.push_back(static_cast<float>((binEnd - 1) / 8.0f));
+                timeValues.push_back(static_cast<float>((binEnd - 1) * timePerSample));
                 dataValues.push_back(maxVal);
             }
         }
@@ -225,8 +213,4 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
 
     return result;
 }
-
-
-
-
 }

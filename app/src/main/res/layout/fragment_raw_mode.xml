@@ -10,36 +10,37 @@
         android:id="@+id/connectButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
         android:text="Connect"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/stopRecordingButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="stop"
         android:layout_marginLeft="10dp"
-        app:layout_constraintStart_toEndOf="@+id/startRecordingButton"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="stop"
+        app:layout_constraintBottom_toTopOf="@+id/clearBufferButton"
+        app:layout_constraintStart_toEndOf="@+id/startRecordingButton" />
 
     <Button
         android:id="@+id/startRecordingButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="start"
         android:layout_marginLeft="10dp"
-        app:layout_constraintStart_toEndOf="@+id/connectButton"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="start"
+        app:layout_constraintBottom_toTopOf="@+id/clearBufferButton"
+        app:layout_constraintStart_toEndOf="@+id/connectButton" />
 
     <Button
         android:id="@+id/initContinuousButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="init"
         android:layout_marginLeft="10dp"
-        app:layout_constraintStart_toEndOf="@+id/stopRecordingButton"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="init"
+        app:layout_constraintBottom_toTopOf="@+id/showPulseEdgesButton"
+        app:layout_constraintStart_toEndOf="@+id/stopRecordingButton" />
 
     <TextView
         android:id="@+id/bufferReadingText"
@@ -56,8 +57,8 @@
         android:id="@+id/retransmitButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="retransmit"
         android:layout_marginLeft="10dp"
+        android:text="retransmit"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -65,8 +66,8 @@
         android:id="@+id/clearBufferButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="clear buf"
         android:layout_marginLeft="10dp"
+        android:text="clear buf"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/retransmitButton" />
 
@@ -74,20 +75,60 @@
         android:id="@+id/showPulseEdgesButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="edges"
         android:layout_marginLeft="10dp"
+        android:text="edges"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/clearBufferButton" />
 
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart"
-        android:layout_width="0dp"
-        android:layout_height="300dp"
-        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
+        android:layout_width="411dp"
+        android:layout_height="250dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/startRecordingButton" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <EditText
+        android:id="@+id/recontructedSinalEditText"
+        android:layout_width="411dp"
+        android:layout_height="100dp"
+        android:background="#EEE"
+        android:gravity="top|start"
+        android:hint="Reconstructed sinal..."
+        android:inputType="textMultiLine"
+        android:padding="8dp"
+        android:scrollbars="vertical"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/chart" />
+
+
+    <EditText
+        android:id="@+id/samplesPerSymbolEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="samples per bit..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:textColor="#000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/recontructedSinalEditText" />
+
+    <EditText
+        android:id="@+id/errorToleranceEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="error tolerance..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:textColor="#000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

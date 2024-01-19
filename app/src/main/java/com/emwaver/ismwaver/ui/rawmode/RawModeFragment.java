@@ -127,7 +127,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
             transmitBuffer();
-            //transmitTeslaBuffer();
 
         });
 
@@ -163,9 +162,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
 
         binding.showPulseEdgesButton.setOnClickListener(v -> {
-            //toggleVerticalLinesOnChart(serialService.findPulseEdges(32, 10, 4));
-            //sendStopTransmissionCommand();
-            transmitTeslaBuffer();
+            toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
         });
 
         initChart();
@@ -265,7 +262,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
             throw new RuntimeException(e);
         }
 
-        int packetSize = 48;
+        int packetSize = 50; //12.5 bytes per frame, 10us sampling period
         long startTime = System.nanoTime();
         final long period = 4000 * 1000;
         final long flow_time_delta = 1000 * 1000;
@@ -297,78 +294,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
 
 
-    private void transmitTeslaBuffer(){
-
-
-
-        byte [] teslaSignal = {(byte)0xAA, (byte)0xAA, (byte)0xAA, (byte)0x8A, (byte)0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
-        int samplesPerBit = 40; // 100 samples per bit
-        int bufferSize = teslaSignal.length * 8 * samplesPerBit;
-
-        byte[] dataBuffer = new byte[bufferSize / 8 + (bufferSize % 8 != 0 ? 1 : 0)]; // Each byte holds 8 bits
-        int bitIndex = 0;
-
-        for (byte teslaByte : teslaSignal) {
-            for (int i = 7; i >= 0; i--) {
-                boolean isHigh = ((teslaByte >> i) & 1) == 1;
-                for (int j = 0; j < samplesPerBit; j++) {
-                    if (isHigh) {
-                        dataBuffer[bitIndex / 8] |= (1 << (7 - bitIndex % 8)); // Set bit
-                    } else {
-                        dataBuffer[bitIndex / 8] &= ~(1 << (7 - bitIndex % 8)); // Clear bit
-                    }
-                    bitIndex++;
-                }
-            }
-        }
-
-        /*for (int i = 0; i < dataBuffer.length; i+=8) {
-            // Set to 0xFF (255) for odd indices, 0x00 for even indices
-            dataBuffer[i] = 0x00;
-            dataBuffer[i+1] = (byte) 0x00;
-            dataBuffer[i+2] = (byte) 0x00;
-            dataBuffer[i+3] = (byte) 0x00;
-
-            dataBuffer[i+4] = (byte) 0xFF;
-            dataBuffer[i+5] = (byte) 0xFF;
-            dataBuffer[i+6] = (byte) 0xFF;
-            dataBuffer[i+7] = (byte) 0xFF;
-        }*/
-        logBuffer(dataBuffer);
-
-        //serialService.clearBuffer();
-
-        sendStartTransmissionCommand(dataBuffer.length); //send in number of samples for the device to know the size and when it is processed
-
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-
-        int packetSize = 13;
-        long startTime = System.nanoTime();
-        final long period = 1000 * 1000;
-
-        for (int i = 0; i < dataBuffer.length; i += packetSize) {
-            startTime += period;
-            byte[] packet = Arrays.copyOfRange(dataBuffer, i, i + packetSize);
-
-            int bufferStatus = getLogStatus();
-            if(bufferStatus < 300){
-                serialService.write(packet); // Write the packet
-            }
-            else {
-                serialService.write(packet); // Write the packet
-                startTime += period;
-            }
-            while (System.nanoTime() < startTime) {
-                // Busy wait
-            }
-        }
-
-    }
 
 
     private void logBuffer(byte[] buffer) {
@@ -404,31 +329,9 @@ public class RawModeFragment extends Fragment implements CommandSender {
         // Convert "tran" string to bytes
         String contCommand = "tran";
         byte[] commandBytes = contCommand.getBytes();
-
-        // Convert size to four bytes (little-endian)
-        byte[] sizeBytes = new byte[] {
-                (byte) (size & 0xFF),                // Least significant byte (LSB)
-                (byte) ((size >> 8) & 0xFF),
-                (byte) ((size >> 16) & 0xFF),
-                (byte) ((size >> 24) & 0xFF)         // Most significant byte (MSB)
-        };
-
-        // Create a byte array to hold the command and the size
-        byte[] byteArray = new byte[commandBytes.length + 4];
-
-        // Copy the command bytes into the array
-        System.arraycopy(commandBytes, 0, byteArray, 0, commandBytes.length);
-
-        // Append the size bytes
-        System.arraycopy(sizeBytes, 0, byteArray, commandBytes.length, sizeBytes.length);
-
         // Send the byte array over the serial connection
-        serialService.write(byteArray);
+        serialService.write(commandBytes);
     }
-
-
-
-
 
 
 
