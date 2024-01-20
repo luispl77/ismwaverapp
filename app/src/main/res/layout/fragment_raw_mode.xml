@@ -16,13 +16,22 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
+        android:id="@+id/fillTeslaButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="fill"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/connectButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
         android:id="@+id/stopRecordingButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+        android:layout_marginStart="98dp"
         android:text="stop"
         app:layout_constraintBottom_toTopOf="@+id/clearBufferButton"
-        app:layout_constraintStart_toEndOf="@+id/startRecordingButton" />
+        app:layout_constraintStart_toStartOf="@+id/startRecordingButton" />
 
     <Button
         android:id="@+id/startRecordingButton"

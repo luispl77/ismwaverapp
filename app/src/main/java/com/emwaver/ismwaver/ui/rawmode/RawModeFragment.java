@@ -110,7 +110,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
             serialService.connectUSBSerial();
             //updateVisibleRange();
         });
-
         binding.initContinuousButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -160,14 +159,15 @@ public class RawModeFragment extends Fragment implements CommandSender {
             updateChart(compressDataAndGetDataSet(continuousmodeViewModel.getVisibleRangeStart(), continuousmodeViewModel.getVisibleRangeEnd(), 1000));
         });
 
-
         binding.showPulseEdgesButton.setOnClickListener(v -> {
-            toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
+            //toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
+        });
+        binding.fillTeslaButton.setOnClickListener(v -> {
+            fillBufferWithTesla();
+            serialService.setMode(Constants.RECEIVE);
         });
 
         initChart();
-
-
 
         chart.setOnChartGestureListener(new OnChartGestureListener() {
             //region useless chart listeners
@@ -245,14 +245,48 @@ public class RawModeFragment extends Fragment implements CommandSender {
             }
         });
 
-
-
-
         return root;
     }
 
+    private void fillBufferWithTesla() {
+        byte[] teslaSignal = {(byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0x8A, (byte) 0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
+        int samplesPerBit = 40; // 40 samples per bit since 400us per bit and 10us sampling rate
+        int signalSize = teslaSignal.length * 8 * samplesPerBit;
+        int paddingSize = signalSize; // Same size as the signal
+        int bufferSize = signalSize + 2 * paddingSize;
+
+        byte[] dataBuffer = new byte[bufferSize / 8 + (bufferSize % 8 != 0 ? 1 : 0)]; // Each byte holds 8 bits
+        int bitIndex = paddingSize;
+
+        // Fill buffer with padding before the Tesla signal
+        for (int i = 0; i < paddingSize; i++) {
+            dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
+        }
+
+        // Fill buffer with Tesla signal
+        for (byte teslaByte : teslaSignal) {
+            for (int i = 7; i >= 0; i--) {
+                boolean isHigh = ((teslaByte >> i) & 1) == 1;
+                for (int j = 0; j < samplesPerBit; j++) {
+                    if (isHigh) {
+                        dataBuffer[bitIndex / 8] |= (1 << (7 - bitIndex % 8));
+                    } else {
+                        dataBuffer[bitIndex / 8] &= ~(1 << (7 - bitIndex % 8));
+                    }
+                    bitIndex++;
+                }
+            }
+        }
+
+        // Fill buffer with padding after the Tesla signal
+        for (int i = bitIndex; i < bufferSize; i++) {
+            dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
+        }
+        logBuffer(dataBuffer);
+        serialService.addToBuffer(dataBuffer);
+    }
+
     private void transmitBuffer() {
-        //serialService.clearBuffer();
         int nativeBufferSize = serialService.getDataBufferLength(); // Existing JNI method to get the native buffer size
         sendStartTransmissionCommand(nativeBufferSize);
 
@@ -290,12 +324,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         serialService.clearCommandBuffer();
     }
 
-
-
-
-
-
-
     private void logBuffer(byte[] buffer) {
         StringBuilder sb = new StringBuilder();
         for (byte b : buffer) {
@@ -312,7 +340,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         Log.i("BufferLog", "length: " + buffer.length*8);
     }
 
-
     private int getLogStatus(){
         int bufferStatus = serialService.getStatusNumber(); // Get buffer status from STM32
         if(bufferStatus == -1){
@@ -324,7 +351,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         return bufferStatus;
     }
 
-
     private void sendStartTransmissionCommand(int size) {
         // Convert "tran" string to bytes
         String contCommand = "tran";
@@ -332,8 +358,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         // Send the byte array over the serial connection
         serialService.write(commandBytes);
     }
-
-
 
     public void initChart() {
         // Configure the chart (optional, based on your needs)
@@ -357,7 +381,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
 
     }
-
 
     private void refreshChart() {
         if(serialService.getRecordingContinuous()){
@@ -425,20 +448,15 @@ public class RawModeFragment extends Fragment implements CommandSender {
     }
 
 
-
-
     private void unbindServiceIfNeeded() {
         if (isServiceBound && !isFragmentActive() && getActivity() != null) {
             getActivity().unbindService(serviceConnection);
             isServiceBound = false;
         }
     }
-
     private boolean isFragmentActive() {
         return isAdded() && !isDetached() && !isRemoving();
     }
-
-
     @Override
     public void onStart() {
         super.onStart();
@@ -447,13 +465,11 @@ public class RawModeFragment extends Fragment implements CommandSender {
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null; // Important for avoiding memory leaks
     }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -461,7 +477,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
 
     }
-
     @Override
     public void onPause() {
         super.onPause();

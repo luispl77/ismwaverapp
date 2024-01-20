@@ -34,7 +34,7 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     private SerialInputOutputManager ioManager;
     private UsbSerialPort finalPort = null;
     private final IBinder binder = new LocalBinder();
-    private native void addToBuffer(byte[] data);
+    public native void addToBuffer(byte[] data);
     public native int getDataBufferLength();
     public native int getCommandBufferLength();
     public native byte[] pollData(int length);
