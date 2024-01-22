@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.analysis.AnalysisFragment">
+
+    <Button
+        android:id="@+id/fillTeslaButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="fill"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/showPulseEdgesButton" />
+
+    <Button
+        android:id="@+id/showPulseEdgesButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="edges"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart"
+        android:layout_width="411dp"
+        android:layout_height="250dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+    <EditText
+        android:id="@+id/recontructedSinalEditText"
+        android:layout_width="411dp"
+        android:layout_height="100dp"
+        android:background="#EEE"
+        android:gravity="top|start"
+        android:hint="Reconstructed sinal..."
+        android:inputType="textMultiLine"
+        android:padding="8dp"
+        android:scrollbars="vertical"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/chart" />
+
+
+    <EditText
+        android:id="@+id/samplesPerSymbolEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="samples per bit..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:textColor="#000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/recontructedSinalEditText" />
+
+    <EditText
+        android:id="@+id/errorToleranceEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="error tolerance..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:textColor="#000"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

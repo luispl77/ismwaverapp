@@ -17,14 +17,22 @@
         android:title="Raw Mode" />
 
     <item
+        android:id="@+id/navigation_analysis"
+        android:icon="@drawable/ic_analysis_black_24dp"
+        android:title="Analysis" />
+
+    <item
         android:id="@+id/navigation_scripts"
         android:icon="@drawable/ic_scripts_black_24dp"
         android:title="Scripts" />
 
+
+
+    <!--
     <item
         android:id="@+id/navigation_flash"
         android:icon="@drawable/ic_flash_black_24dp"
-        android:title="@string/title_notifications" />
+        android:title="@string/title_notifications" />  -->
 
 
 

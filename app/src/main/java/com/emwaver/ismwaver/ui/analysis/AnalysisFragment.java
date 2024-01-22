@@ -1,4 +1,6 @@
-package com.emwaver.ismwaver.ui.rawmode;
+package com.emwaver.ismwaver.ui.analysis;
+
+import androidx.lifecycle.ViewModelProvider;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -6,6 +8,11 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,16 +21,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-
-import com.emwaver.ismwaver.CommandSender;
 import com.emwaver.ismwaver.Constants;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.databinding.FragmentAnalysisBinding;
 import com.emwaver.ismwaver.databinding.FragmentRawModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
+import com.emwaver.ismwaver.ui.rawmode.RawModeViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
@@ -35,17 +39,18 @@ import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RawModeFragment extends Fragment implements CommandSender {
+public class AnalysisFragment extends Fragment {
 
-    private RawModeViewModel continuousmodeViewModel;
 
-    private FragmentRawModeBinding binding; // Binding class for the fragment_scripts.xml layout
+
+    private AnalysisViewModel analysisViewModel;
+
+    private @NonNull FragmentAnalysisBinding binding; // Binding class for the fragment_scripts.xml layout
 
     private SerialService serialService;
 
@@ -61,15 +66,9 @@ public class RawModeFragment extends Fragment implements CommandSender {
     private int prevRangeStart = 0;
     private int prevRangeEnd = 0;
 
-    private CC1101 cc;
-
     public ScheduledExecutorService scheduler;
 
     private final int refreshRate = 100; // Refresh rate in milliseconds
-
-
-
-
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -92,7 +91,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
                              @Nullable Bundle savedInstanceState) {
 
         // Initialize view binding
-        binding = FragmentRawModeBinding.inflate(inflater, container, false);
+        binding = FragmentAnalysisBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -101,62 +100,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
         chart = binding.chart;
 
-        CC1101 cc = new CC1101(this);
-
-        continuousmodeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
-
-        binding.connectButton.setOnClickListener(v -> {
-            serialService.connectUSBSerial();
-            //updateVisibleRange();
-        });
-        binding.initContinuousButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(() -> {
-                    cc.sendInitRxContinuous();
-                    //showToastOnUiThread("check terminal");
-                }).start();
-            }
-        });
-
-        binding.retransmitButton.setOnClickListener(v -> {
-            int bufferLength = serialService.getDataBufferLength();
-            serialService.setMode(0); //transmit
-            Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
-
-            transmitBuffer();
-
-        });
-
-        binding.clearBufferButton.setOnClickListener(v -> {
-            serialService.clearDataBuffer();
-            Toast.makeText(getContext(), "buffer cleared" , Toast.LENGTH_SHORT).show();
-            updateChart(compressDataAndGetDataSet(continuousmodeViewModel.getVisibleRangeStart(), continuousmodeViewModel.getVisibleRangeEnd(), 1000));
-        });
-
-        binding.startRecordingButton.setOnClickListener(v -> {
-            String contCommand = "raw";
-            byte[] byteArray = contCommand.getBytes();
-            serialService.setMode(Constants.RECEIVE);
-            serialService.write(byteArray);
-
-        });
-
-        binding.stopRecordingButton.setOnClickListener(v -> {
-            String contCommand = "ssss";
-            byte[] byteArray = contCommand.getBytes();
-            serialService.write(byteArray);
-            new Thread(() -> {
-                serialService.emptyReadBuffer(); //this function busy waits
-                serialService.setMode(Constants.TERMINAL); //wait before the buffer is empty
-            }).start();
-
-            chartMaxX = serialService.getDataBufferLength();
-            XAxis xAxis = chart.getXAxis();
-            xAxis.setAxisMinimum(chartMinX); // Start at 0 microseconds
-            xAxis.setAxisMaximum(chartMaxX);
-            updateChart(compressDataAndGetDataSet(continuousmodeViewModel.getVisibleRangeStart(), continuousmodeViewModel.getVisibleRangeEnd(), 1000));
-        });
+        analysisViewModel = new ViewModelProvider(this).get(AnalysisViewModel.class);
 
         binding.showPulseEdgesButton.setOnClickListener(v -> {
             //toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
@@ -209,18 +153,18 @@ public class RawModeFragment extends Fragment implements CommandSender {
                     // Zoom level changed significantly
                     currentZoomLevel = newZoomLevel;
 
-                    continuousmodeViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
-                    continuousmodeViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
+                    analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
+                    analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-                    updateChart(compressDataAndGetDataSet(continuousmodeViewModel.getVisibleRangeStart(), continuousmodeViewModel.getVisibleRangeEnd(), 1000));
+                    updateChart(compressDataAndGetDataSet(analysisViewModel.getVisibleRangeStart(), analysisViewModel.getVisibleRangeEnd(), 1000));
                 }
             }
             @Override
             public void onChartTranslate(MotionEvent me, float dX, float dY) {
                 int visibleRangeStart = (int) chart.getLowestVisibleX();
                 int visibleRangeEnd = (int) chart.getHighestVisibleX();
-                continuousmodeViewModel.setVisibleRangeStart(visibleRangeStart);
-                continuousmodeViewModel.setVisibleRangeEnd(visibleRangeStart);
+                analysisViewModel.setVisibleRangeStart(visibleRangeStart);
+                analysisViewModel.setVisibleRangeEnd(visibleRangeStart);
 
                 int span = visibleRangeEnd - visibleRangeStart;
                 float translationThreshold = (float)span / 100; // Define an appropriate threshold value
@@ -245,8 +189,11 @@ public class RawModeFragment extends Fragment implements CommandSender {
             }
         });
 
+
         return root;
     }
+
+
 
     private void fillBufferWithTesla() {
         byte[] teslaSignal = {(byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0x8A, (byte) 0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
@@ -282,81 +229,8 @@ public class RawModeFragment extends Fragment implements CommandSender {
         for (int i = bitIndex; i < bufferSize; i++) {
             dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
         }
-        logBuffer(dataBuffer);
+        //logBuffer(dataBuffer);
         serialService.addToBuffer(dataBuffer);
-    }
-
-    private void transmitBuffer() {
-        int nativeBufferSize = serialService.getDataBufferLength(); // Existing JNI method to get the native buffer size
-        sendStartTransmissionCommand(nativeBufferSize);
-
-        try {
-            Thread.sleep(400);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
-        int packetSize = 50; //12.5 bytes per frame, 10us sampling period
-        long startTime = System.nanoTime();
-        final long period = 4000 * 1000;
-        final long flow_time_delta = 1000 * 1000;
-
-        for (int i = 0; i < nativeBufferSize; i += packetSize) {
-            int end = Math.min(i + packetSize, nativeBufferSize);
-            byte[] packet = serialService.getBufferRange(i, end); // Native method to get a range of the buffer
-
-            startTime += period;
-            int bufferStatus = getLogStatus();
-            if (bufferStatus > 200 && bufferStatus < 300) {
-                serialService.write(packet);
-            } else if(bufferStatus > 300){
-                serialService.write(packet);
-                startTime += flow_time_delta; //write slower than the processing speed
-            }
-            else if(bufferStatus < 300){
-                serialService.write(packet);
-                startTime -= flow_time_delta; //write faster than the processing speed
-            }
-            while (System.nanoTime() < startTime) {
-                // Busy wait
-            }
-        }
-        serialService.clearCommandBuffer();
-    }
-
-    private void logBuffer(byte[] buffer) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : buffer) {
-            for (int i = 7; i >= 0; i--) {
-                sb.append((b >> i) & 1); // Append '1' for set bit, '0' for clear bit
-            }
-        }
-        Log.i("BufferLog", sb.toString());
-        sb = new StringBuilder();
-        for (byte b : buffer) {
-            sb.append(String.format("%02X ", b));
-        }
-        Log.i("BufferLog", sb.toString());
-        Log.i("BufferLog", "length: " + buffer.length*8);
-    }
-
-    private int getLogStatus(){
-        int bufferStatus = serialService.getStatusNumber(); // Get buffer status from STM32
-        if(bufferStatus == -1){
-            Log.i("bufstatus", "not found" + "   buflen: " + serialService.getCommandBufferLength());
-        }
-        else{
-            Log.i("bufstatus", "" + bufferStatus  + "   buflen: " + serialService.getCommandBufferLength());
-        }
-        return bufferStatus;
-    }
-
-    private void sendStartTransmissionCommand(int size) {
-        // Convert "tran" string to bytes
-        String contCommand = "tran";
-        byte[] commandBytes = contCommand.getBytes();
-        // Send the byte array over the serial connection
-        serialService.write(commandBytes);
     }
 
     public void initChart() {
@@ -387,8 +261,8 @@ public class RawModeFragment extends Fragment implements CommandSender {
             // Get the current visible range
             int visibleRangeStart = (int) chart.getLowestVisibleX();
             int visibleRangeEnd = (int) chart.getHighestVisibleX();
-            continuousmodeViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
-            continuousmodeViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
+            analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
+            analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
             chartMaxX = serialService.getDataBufferLength();
             XAxis xAxis = chart.getXAxis();
@@ -447,16 +321,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         }
     }
 
-
-    private void unbindServiceIfNeeded() {
-        if (isServiceBound && !isFragmentActive() && getActivity() != null) {
-            getActivity().unbindService(serviceConnection);
-            isServiceBound = false;
-        }
-    }
-    private boolean isFragmentActive() {
-        return isAdded() && !isDetached() && !isRemoving();
-    }
     @Override
     public void onStart() {
         super.onStart();
@@ -483,35 +347,5 @@ public class RawModeFragment extends Fragment implements CommandSender {
         if (scheduler != null && !scheduler.isShutdown()) {
             scheduler.shutdownNow();
         }
-    }
-
-    @Override
-    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
-        // Send the command
-        if(isServiceBound){
-            serialService.write(command);
-        }
-
-        long startTime = System.currentTimeMillis(); // Start time for timeout
-
-        // Wait for the response with timeout
-        while (isServiceBound && serialService.getCommandBufferLength() < expectedResponseSize) {
-            if (System.currentTimeMillis() - startTime > timeoutMillis) {
-                return null; // Timeout occurred
-            }
-            try {
-                Thread.sleep(busyDelay); // Wait for it to arrive
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-        }
-
-        // Retrieve the response
-        byte[] response = new byte[expectedResponseSize];
-        response = serialService.pollData(expectedResponseSize);
-
-        serialService.clearCommandBuffer(); // Optionally clear the queue after processing (pollData() should already clear the response)
-        return response;
     }
 }

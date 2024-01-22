@@ -117,8 +117,6 @@ public class CC1101 {
     public CC1101(CommandSender commandSender) {
         this.commandSender = commandSender;
     }
-
-
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];
         byte[] response;
@@ -127,7 +125,6 @@ public class CC1101 {
         response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("spiStrobe", Arrays.toString(response));  //response is the status byte
     }
-
     public void writeBurstReg(byte addr, byte[] data, byte len){
         byte [] command = new byte[data.length+3];
         byte [] response = new byte[1];
@@ -138,7 +135,6 @@ public class CC1101 {
         response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("writeBurstReg", toHexStringWithHexPrefix(response)); //response is the status byte
     }
-
     public byte [] readBurstReg(byte addr, int len){
         byte [] command = new byte[3];
         byte [] response = new byte[len];
@@ -149,7 +145,6 @@ public class CC1101 {
         Log.i("readBurstReg", toHexStringWithHexPrefix(response));
         return response;
     }
-
     public byte readReg(byte addr){
         byte [] command = new byte[2];
         byte [] response = new byte[1];
@@ -159,7 +154,6 @@ public class CC1101 {
         Log.i("readReg", toHexStringWithHexPrefix(response));
         return response[0];
     }
-
     public void writeReg(byte addr, byte data){
         byte [] command = new byte[3];
         byte [] response = new byte[1];
@@ -169,8 +163,6 @@ public class CC1101 {
         response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
         Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
     }
-
-
     public void sendData(byte [] txBuffer, int size, int t) {
         writeBurstReg(CC1101_TXFIFO, txBuffer, (byte) size);     //write data to send
         spiStrobe(CC1101_SIDLE);
@@ -182,7 +174,6 @@ public class CC1101 {
         }
         spiStrobe(CC1101_SFTX);                         //flush TXfifo
     }
-
     public byte [] receiveData() {
         byte size_reading;
         byte [] rxBuffer;
@@ -200,9 +191,6 @@ public class CC1101 {
             return null;
         }
     }
-
-
-
     public void sendInit(){
         byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Transmit init done\n";
@@ -212,7 +200,6 @@ public class CC1101 {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
-
     public void sendInitRx(){
         byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Receive init done\n";
@@ -222,7 +209,6 @@ public class CC1101 {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
-
     public void sendInitRxContinuous(){
         byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
         String responseString = "<STR>Continuous mode 433/Rx values init done\n</STR>";
@@ -232,7 +218,6 @@ public class CC1101 {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
-
     public boolean setDataRate(int bitRate) {
         // Constants for the DRATE register calculation
         final double F_OSC = 26_000_000; // Oscillator frequency in Hz
@@ -282,7 +267,6 @@ public class CC1101 {
             return false;
         }
     }
-
     public boolean setModulation(byte modulation) {
         // Read the current register value
         byte currentValue = readReg(CC1101_MDMCFG2);
@@ -304,7 +288,6 @@ public class CC1101 {
         // Assuming writeReg method exists and returns a boolean indicating success
         return readReg(CC1101_MDMCFG2) == currentValue;
     }
-
     public String toHexStringWithHexPrefix(byte[] array) {
         StringBuilder hexString = new StringBuilder("[");
         for (int i = 0; i < array.length; i++) {
@@ -322,7 +305,6 @@ public class CC1101 {
         hexString.append("]");
         return hexString.toString();
     }
-
     public boolean setManchesterEncoding(boolean manchester){
         byte mdmcfg2 = readReg(CC1101_MDMCFG2);
         //bit 3 is the manchester encoding bit
@@ -336,7 +318,6 @@ public class CC1101 {
         //verify
         return readReg(CC1101_MDMCFG2) == mdmcfg2;
     }
-
     public boolean setSyncMode(byte syncmode){
         // Read the current register value
         byte currentValue = readReg(CC1101_MDMCFG2);
@@ -358,8 +339,6 @@ public class CC1101 {
         // Assuming writeReg method exists and returns a boolean indicating success
         return readReg(CC1101_MDMCFG2) == currentValue;
     }
-
-
     public boolean setDeviation(int deviation) {
         // Constants for the DEVIATN register calculation
         final double F_OSC = 26_000_000; // Oscillator frequency in Hz
@@ -403,8 +382,6 @@ public class CC1101 {
             return false;
         }
     }
-
-
     public boolean setNumPreambleBytes(int num){
         byte mdmcfg1 = (byte)(num << 4);
 
@@ -412,7 +389,6 @@ public class CC1101 {
         //verify
         return readReg(CC1101_MDMCFG1) == mdmcfg1;
     }
-
     public boolean setSyncWord(byte[] syncword) {
         if (syncword == null || syncword.length != 2) {
             // Invalid input: Sync word must be exactly 2 bytes long
@@ -427,14 +403,12 @@ public class CC1101 {
         // Compare the written sync word with the read back value
         return Arrays.equals(syncword, readBack);
     }
-
     public boolean setPktLength(int length){
         byte pktlen = (byte)length;
         writeReg(CC1101_PKTLEN, pktlen);
         //verify
         return readReg(CC1101_PKTLEN) == pktlen;
     }
-
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
         int expectedLength = 4; // Expected length of the response; adjust as needed
@@ -450,9 +424,6 @@ public class CC1101 {
 
         return false;
     }
-
-
-
     public String bytesToHexString(byte[] bytes) {
         StringBuilder hexString = new StringBuilder();
         for (byte b : bytes) {
@@ -464,7 +435,6 @@ public class CC1101 {
         }
         return hexString.toString();
     }
-
     public byte[] convertHexStringToByteArray(String hexString) {
         // Remove any non-hex characters (like spaces) if present
         hexString = hexString.replaceAll("[^0-9A-Fa-f]", "");

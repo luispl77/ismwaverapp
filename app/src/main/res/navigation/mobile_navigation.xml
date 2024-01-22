@@ -24,14 +24,23 @@
         tools:layout="@layout/fragment_raw_mode" />
 
     <fragment
+        android:id="@+id/navigation_analysis"
+        android:name="com.emwaver.ismwaver.ui.analysis.AnalysisFragment"
+        android:label="Analysis"
+        tools:layout="@layout/fragment_analysis" />
+
+    <fragment
         android:id="@+id/navigation_scripts"
         android:name="com.emwaver.ismwaver.ui.scripts.ScriptsFragment"
         android:label="Scripts"
         tools:layout="@layout/fragment_raw_mode" />
 
+    <!--
     <fragment
         android:id="@+id/navigation_flash"
         android:name="com.emwaver.ismwaver.ui.flash.FlashFragment"
         android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_flash" />
+        tools:layout="@layout/fragment_flash" /> -->
+
+
 </navigation>
