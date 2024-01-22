@@ -2,14 +2,19 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/navigation_terminal"
-        android:icon="@drawable/ic_terminal_black_24dp"
-        android:title="@string/title_home" />
+        android:id="@+id/navigation_console"
+        android:icon="@drawable/ic_console_black_24dp"
+        android:title="Console" />
 
     <item
         android:id="@+id/navigation_packetmode"
         android:icon="@drawable/ic_packetmode_black_24dp"
         android:title="@string/title_dashboard" />
+
+    <item
+        android:id="@+id/navigation_overview"
+        android:icon="@drawable/ic_overview_black_24dp"
+        android:title="Overview" />
 
     <item
         android:id="@+id/navigation_rawmode"
@@ -21,10 +26,7 @@
         android:icon="@drawable/ic_analysis_black_24dp"
         android:title="Analysis" />
 
-    <item
-        android:id="@+id/navigation_scripts"
-        android:icon="@drawable/ic_scripts_black_24dp"
-        android:title="Scripts" />
+
 
 
 

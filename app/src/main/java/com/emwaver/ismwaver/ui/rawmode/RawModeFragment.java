@@ -45,7 +45,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
     private RawModeViewModel continuousmodeViewModel;
 
-    private FragmentRawModeBinding binding; // Binding class for the fragment_scripts.xml layout
+    private FragmentRawModeBinding binding;
 
     private SerialService serialService;
 
@@ -114,7 +114,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
             public void onClick(View v) {
                 new Thread(() -> {
                     cc.sendInitRxContinuous();
-                    //showToastOnUiThread("check terminal");
+                    //showToastOnUiThread("check console");
                 }).start();
             }
         });

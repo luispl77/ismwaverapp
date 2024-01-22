@@ -50,7 +50,7 @@ public class AnalysisFragment extends Fragment {
 
     private AnalysisViewModel analysisViewModel;
 
-    private @NonNull FragmentAnalysisBinding binding; // Binding class for the fragment_scripts.xml layout
+    private @NonNull FragmentAnalysisBinding binding;
 
     private SerialService serialService;
 

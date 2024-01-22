@@ -7,7 +7,7 @@ public class Constants {
 
     public static final String ACTION_CONNECT_USB_BOOTLOADER = "com.example.emwaver10.GRANT_USB";
 
-    // Action string for the broadcast when sending data (from terminal) to be transmitted over USB in SerialService
+    // Action string for the broadcast when sending data (from console) to be transmitted over USB in SerialService
     public static final String ACTION_SEND_DATA_TO_SERVICE = "com.example.ACTION_SEND_DATA_TO_SERVICE";
 
     public static final String ACTION_SEND_DATA_BYTES_TO_SERVICE = "com.example.ACTION_SEND_DATA_BYTES_TO_SERVICE";

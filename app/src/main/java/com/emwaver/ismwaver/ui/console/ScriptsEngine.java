@@ -1,4 +1,4 @@
-package com.emwaver.ismwaver.ui.scripts;
+package com.emwaver.ismwaver.ui.console;
 
 import com.emwaver.ismwaver.jsobjects.CC1101;
 import com.emwaver.ismwaver.jsobjects.Console;
@@ -38,12 +38,11 @@ public class ScriptsEngine{
 
     private Utils utils;
 
-    private ScriptsViewModel scriptsViewModel;
+
     private static final String SCRIPT = "function evaluate(arithmetic){ return eval(arithmetic); }";
 
-    public ScriptsEngine(CC1101 cc1101, ScriptsViewModel scriptsViewModel, Serial serial, Console console, Utils utils) {
+    public ScriptsEngine(CC1101 cc1101, Serial serial, Console console, Utils utils) {
         this.cc1101 = cc1101;
-        this.scriptsViewModel = scriptsViewModel;
         this.serial = serial;
         this.console = console;
         this.utils = utils;

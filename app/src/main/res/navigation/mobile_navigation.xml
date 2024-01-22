@@ -3,19 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_terminal">
+    app:startDestination="@+id/navigation_overview">
 
     <fragment
-        android:id="@+id/navigation_terminal"
-        android:name="com.emwaver.ismwaver.ui.terminal.TerminalFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_terminal" />
+        android:id="@+id/navigation_console"
+        android:name="com.emwaver.ismwaver.ui.console.ConsoleFragment"
+        android:label="Console"
+        tools:layout="@layout/fragment_console" />
 
     <fragment
         android:id="@+id/navigation_packetmode"
         android:name="com.emwaver.ismwaver.ui.packetmode.PacketModeFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_packet_mode" />
+
+    <fragment
+        android:id="@+id/navigation_overview"
+        android:name="com.emwaver.ismwaver.ui.overview.OverviewFragment"
+        android:label="Overview"
+        tools:layout="@layout/fragment_overview" />
 
     <fragment
         android:id="@+id/navigation_rawmode"
@@ -29,11 +35,6 @@
         android:label="Analysis"
         tools:layout="@layout/fragment_analysis" />
 
-    <fragment
-        android:id="@+id/navigation_scripts"
-        android:name="com.emwaver.ismwaver.ui.scripts.ScriptsFragment"
-        android:label="Scripts"
-        tools:layout="@layout/fragment_raw_mode" />
 
     <!--
     <fragment

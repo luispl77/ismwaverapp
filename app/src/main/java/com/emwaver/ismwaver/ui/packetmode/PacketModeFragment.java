@@ -180,7 +180,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             public void onClick(View v) {
                 new Thread(() -> {
                     cc.sendInit();
-                    showToastOnUiThread("check terminal");
+                    showToastOnUiThread("check console");
                 }).start();
             }
         });
@@ -190,7 +190,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             public void onClick(View v) {
                 new Thread(() -> {
                     cc.sendInitRx();
-                    showToastOnUiThread("check terminal");
+                    showToastOnUiThread("check console");
                 }).start();
             }
         });

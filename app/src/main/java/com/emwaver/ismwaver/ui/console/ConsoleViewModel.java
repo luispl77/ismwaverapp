@@ -1,4 +1,4 @@
-package com.emwaver.ismwaver.ui.terminal;
+package com.emwaver.ismwaver.ui.console;
 
 import android.graphics.Color;
 
@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModel;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TerminalViewModel extends ViewModel {
+public class ConsoleViewModel extends ViewModel {
     private final MutableLiveData<List<TextWithColor>> terminalData = new MutableLiveData<>(new ArrayList<>());
 
     public LiveData<List<TextWithColor>> getTerminalData() {

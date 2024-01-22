@@ -278,14 +278,14 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         super.onCreate();
         // Register receivers for listening for broadcasts from Serial fragment.
         IntentFilter filterConnectButton = new IntentFilter(Constants.ACTION_CONNECT_USB);
-        registerReceiver(connectReceiver, filterConnectButton); // Receiver for the connect button in terminal.
+        registerReceiver(connectReceiver, filterConnectButton); // Receiver for the connect button in console.
         IntentFilter filter = new IntentFilter(Constants.ACTION_CONNECT_USB_BOOTLOADER);
         registerReceiver(connectReceiver, filter);
         IntentFilter filterConnection = new IntentFilter(Constants.ACTION_INITIATE_USB_CONNECTION);
         registerReceiver(connectReceiver, filterConnection);
 
         IntentFilter filterData = new IntentFilter(Constants.ACTION_SEND_DATA_TO_SERVICE);
-        registerReceiver(connectReceiver, filterData); // Receiver for the data inputted in terminal fragment and entered, to then be sent over USB.
+        registerReceiver(connectReceiver, filterData); // Receiver for the data inputted in console fragment and entered, to then be sent over USB.
     }
 
     @Override
