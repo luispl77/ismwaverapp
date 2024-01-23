@@ -145,10 +145,10 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     return -1;
 }
 JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
-    rangeStart *= 8; // Convert byte range to bit range
-    rangeEnd *= 8;
+    //rangeStart *= 8; // Convert byte range to bit range
+    //rangeEnd *= 8;
     float totalPointsInRange = rangeEnd - rangeStart;
-    float timePerSample = 1/8.0f; // 10 microseconds
+    float timePerSample = 8/8.0f; // 10 microseconds
     std::vector<float> timeValues;
     std::vector<float> dataValues;
 

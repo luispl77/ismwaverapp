@@ -12,10 +12,10 @@
         tools:layout="@layout/fragment_console" />
 
     <fragment
-        android:id="@+id/navigation_packetmode"
-        android:name="com.emwaver.ismwaver.ui.packetmode.PacketModeFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_packet_mode" />
+        android:id="@+id/navigation_rawmode"
+        android:name="com.emwaver.ismwaver.ui.rawmode.RawModeFragment"
+        android:label="Raw Mode"
+        tools:layout="@layout/fragment_raw_mode" />
 
     <fragment
         android:id="@+id/navigation_overview"
@@ -24,16 +24,18 @@
         tools:layout="@layout/fragment_overview" />
 
     <fragment
-        android:id="@+id/navigation_rawmode"
-        android:name="com.emwaver.ismwaver.ui.rawmode.RawModeFragment"
-        android:label="Raw Mode"
-        tools:layout="@layout/fragment_raw_mode" />
-
-    <fragment
         android:id="@+id/navigation_analysis"
         android:name="com.emwaver.ismwaver.ui.analysis.AnalysisFragment"
         android:label="Analysis"
         tools:layout="@layout/fragment_analysis" />
+
+    <fragment
+        android:id="@+id/navigation_packetmode"
+        android:name="com.emwaver.ismwaver.ui.packetmode.PacketModeFragment"
+        android:label="@string/title_dashboard"
+        tools:layout="@layout/fragment_packet_mode" />
+
+
 
 
     <!--

@@ -57,7 +57,7 @@ public class AnalysisFragment extends Fragment {
     LineChart chart = null;
 
     private int chartMinX = 0;
-    private int chartMaxX = 10000;
+    private int chartMaxX = 100000;
 
     private boolean isServiceBound = false;
 
@@ -65,6 +65,7 @@ public class AnalysisFragment extends Fragment {
 
     private int prevRangeStart = 0;
     private int prevRangeEnd = 0;
+    private int numberBins = 200;
 
     public ScheduledExecutorService scheduler;
 
@@ -107,8 +108,11 @@ public class AnalysisFragment extends Fragment {
         });
 
         binding.fillTeslaButton.setOnClickListener(v -> {
-            fillBufferWithTesla();
             serialService.setMode(Constants.RECEIVE);
+            fillBufferWithTesla();
+            refreshChart();
+            serialService.setMode(Constants.TERMINAL);
+
         });
 
         initChart();
@@ -156,7 +160,8 @@ public class AnalysisFragment extends Fragment {
                     analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
                     analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-                    updateChart(compressDataAndGetDataSet(analysisViewModel.getVisibleRangeStart(), analysisViewModel.getVisibleRangeEnd(), 1000));
+                    Log.i("ranges", "start:" + analysisViewModel.getVisibleRangeStart() + " end:" + analysisViewModel.getVisibleRangeEnd());
+                    updateChart(compressDataAndGetDataSet(analysisViewModel.getVisibleRangeStart(), analysisViewModel.getVisibleRangeEnd(), numberBins));
                 }
             }
             @Override
@@ -164,7 +169,7 @@ public class AnalysisFragment extends Fragment {
                 int visibleRangeStart = (int) chart.getLowestVisibleX();
                 int visibleRangeEnd = (int) chart.getHighestVisibleX();
                 analysisViewModel.setVisibleRangeStart(visibleRangeStart);
-                analysisViewModel.setVisibleRangeEnd(visibleRangeStart);
+                analysisViewModel.setVisibleRangeEnd(visibleRangeEnd);
 
                 int span = visibleRangeEnd - visibleRangeStart;
                 float translationThreshold = (float)span / 100; // Define an appropriate threshold value
@@ -184,7 +189,8 @@ public class AnalysisFragment extends Fragment {
                     prevRangeStart = visibleRangeStart;
                     prevRangeEnd = visibleRangeEnd;
 
-                    updateChart(compressDataAndGetDataSet(visibleRangeStart, visibleRangeEnd, 1000));
+                    Log.i("ranges", "start:" + visibleRangeStart + " end:" + visibleRangeEnd);
+                    updateChart(compressDataAndGetDataSet(visibleRangeStart, visibleRangeEnd, numberBins));
                 }
             }
         });
@@ -230,7 +236,9 @@ public class AnalysisFragment extends Fragment {
             dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
         }
         //logBuffer(dataBuffer);
+        Log.i("dataBuffer", "size: "+dataBuffer.length);
         serialService.addToBuffer(dataBuffer);
+        Log.i("data buflen", "size: "+serialService.getDataBufferLength());
     }
 
     public void initChart() {
@@ -240,6 +248,8 @@ public class AnalysisFragment extends Fragment {
         chart.setPinchZoom(true);
         chart.setScaleYEnabled(false); // Disable Y-axis scaling
         chart.setScaleXEnabled(true);  // Enable X-axis scaling
+
+
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setAxisMinimum(chartMinX); // Start at 0 microseconds
@@ -264,7 +274,7 @@ public class AnalysisFragment extends Fragment {
             analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
             analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-            chartMaxX = serialService.getDataBufferLength();
+            chartMaxX = serialService.getDataBufferLength()*8;
             XAxis xAxis = chart.getXAxis();
             xAxis.setAxisMinimum(chartMinX);
             xAxis.setAxisMaximum(chartMaxX);
@@ -280,7 +290,7 @@ public class AnalysisFragment extends Fragment {
         float[] timeValues = (float[]) result[0];
         float[] dataValues = (float[]) result[1];
 
-        Log.i("compressed", dataValues.length + " values");
+        //Log.i("compressed", dataValues.length + " values");
 
         List<Entry> entries = new ArrayList<>();
         for (int i = 0; i < timeValues.length; i++) {

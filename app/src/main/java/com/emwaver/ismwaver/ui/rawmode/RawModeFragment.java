@@ -158,14 +158,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
             updateChart(compressDataAndGetDataSet(continuousmodeViewModel.getVisibleRangeStart(), continuousmodeViewModel.getVisibleRangeEnd(), 1000));
         });
 
-        binding.showPulseEdgesButton.setOnClickListener(v -> {
-            //toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
-        });
-
-        binding.fillTeslaButton.setOnClickListener(v -> {
-            fillBufferWithTesla();
-            serialService.setMode(Constants.RECEIVE);
-        });
 
         initChart();
 
