@@ -19,45 +19,7 @@ std::vector<char> commandBuffer;
 
 extern "C" {
 
-JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findPulseEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance, jint maxLowPulseMultiplier) {
 
-    std::vector<jlong> edges;
-    bool lastState = (dataBuffer[0] & 0x80) != 0; // Initial state is the most significant bit of the first byte
-    jlong edgePosition = 0;
-    jlong lastEdgePosition = 0;
-
-    for (jlong byteIndex = 0; byteIndex < dataBuffer.size(); ++byteIndex) {
-        char currentByte = dataBuffer[byteIndex];
-        for (int bitIndex = 7; bitIndex >= 0; --bitIndex) {
-            bool currentState = (currentByte & (1 << bitIndex)) != 0;
-
-            if (currentState != lastState) {
-                edgePosition = byteIndex * 8 + (7 - bitIndex);
-                jlong pulseLength = edgePosition - lastEdgePosition;
-
-                bool validPulse;
-                if (lastState) { // lastState == HIGH
-                    jlong diff = std::abs(pulseLength - samplesPerSymbol);
-                    validPulse = (diff <= errorTolerance || pulseLength % samplesPerSymbol <= errorTolerance);
-                } else { // lastState == LOW
-                    validPulse = (pulseLength >= samplesPerSymbol &&
-                                  pulseLength <= samplesPerSymbol * maxLowPulseMultiplier);
-                }
-
-                if (validPulse) {
-                    edges.push_back(edgePosition);
-                    lastState = currentState;
-                }
-                lastEdgePosition = edgePosition;
-            }
-        }
-    }
-
-    jlongArray result = env->NewLongArray(edges.size());
-    env->SetLongArrayRegion(result, 0, edges.size(), edges.data());
-
-    return result;
-}
 JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_SerialService_getRecordingContinuous(JNIEnv *env, jobject) {
     return currentMode == RECEIVE;
 }
@@ -145,10 +107,9 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     return -1;
 }
 JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
-    //rangeStart *= 8; // Convert byte range to bit range
-    //rangeEnd *= 8;
-    float totalPointsInRange = rangeEnd - rangeStart;
-    float timePerSample = 8/8.0f; // 10 microseconds
+
+    float timePerSample = 1.0f; // todo: fix scale to have 10us per sample
+    float totalPointsInRange = (rangeEnd - rangeStart)/timePerSample;
     std::vector<float> timeValues;
     std::vector<float> dataValues;
 
@@ -213,4 +174,196 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
 
     return result;
 }
+JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findPulseEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance, jint maxLowPulseMultiplier) {
+
+    std::vector<jlong> edges;
+    bool lastState = (dataBuffer[0] & 0x80) != 0; // Initial state is the most significant bit of the first byte
+    jlong edgePosition = 0;
+    jlong lastEdgePosition = 0;
+
+    for (jlong byteIndex = 0; byteIndex < dataBuffer.size(); ++byteIndex) {
+        char currentByte = dataBuffer[byteIndex];
+        for (int bitIndex = 0; bitIndex <= 7; bitIndex++) {
+            bool currentState = (currentByte & (1 << bitIndex)) != 0;
+
+            if (currentState != lastState) {
+                edgePosition = byteIndex * 8 + bitIndex;
+                jlong pulseLength = edgePosition - lastEdgePosition;
+
+                bool validPulse;
+                if (lastState) { // lastState == HIGH
+                    jlong diff = std::abs(pulseLength - samplesPerSymbol);
+                    validPulse = (diff <= errorTolerance || pulseLength % samplesPerSymbol <= errorTolerance);
+                } else { // lastState == LOW
+                    validPulse = (pulseLength >= samplesPerSymbol &&
+                                  pulseLength <= samplesPerSymbol * maxLowPulseMultiplier);
+                }
+
+                if (validPulse) {
+                    edges.push_back(edgePosition);
+                    lastState = currentState;
+                }
+                lastEdgePosition = edgePosition;
+            }
+        }
+    }
+
+    jlongArray result = env->NewLongArray(edges.size());
+    env->SetLongArrayRegion(result, 0, edges.size(), edges.data());
+
+    return result;
+}
+JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findHighPulses(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance) {
+    std::vector<jlong> edges;
+    bool isHigh = false;
+    jlong startOfPulse = 0;
+    jlong highSampleCount = 0;
+
+    for (jlong byteIndex = 0; byteIndex < dataBuffer.size(); ++byteIndex) {
+        char currentByte = dataBuffer[byteIndex];
+        for (int bitIndex = 0; bitIndex <= 7; bitIndex++) {
+            bool currentState = (currentByte & (1 << bitIndex)) != 0;
+
+            if (!isHigh && currentState) {
+                // Transition from LOW to HIGH
+                isHigh = true;
+                startOfPulse = byteIndex * 8 + bitIndex;
+                highSampleCount = 1;
+            } else if (isHigh) {
+                if (currentState) {
+                    // Counting HIGH samples
+                    highSampleCount++;
+                } else {
+                    // Transition from HIGH to LOW
+                    for (int n = 1; n * samplesPerSymbol <= highSampleCount + errorTolerance; ++n) {
+                        if (std::abs(highSampleCount - n * samplesPerSymbol) <= errorTolerance) {
+                            // Valid pulse, add edges
+                            edges.push_back(startOfPulse); // Start of pulse
+                            edges.push_back(byteIndex * 8 + bitIndex); // End of pulse
+                            break;
+                        }
+                    }
+                    isHigh = false;
+                }
+            }
+        }
+    }
+
+    // Check for a trailing HIGH pulse at the end of data
+    for (int n = 1; n * samplesPerSymbol <= highSampleCount + errorTolerance; ++n) {
+        if (isHigh && std::abs(highSampleCount - n * samplesPerSymbol) <= errorTolerance) {
+            edges.push_back(startOfPulse); // Start of pulse
+            edges.push_back(dataBuffer.size() * 8 - 1); // End of pulse
+            break;
+        }
+    }
+
+    jlongArray result = env->NewLongArray(edges.size());
+    env->SetLongArrayRegion(result, 0, edges.size(), edges.data());
+
+    return result;
+}
+JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findHighEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance) {
+    std::vector<jlong> edges;
+    bool isHigh = false;
+    jlong startOfPulse = 0;
+    jlong highSampleCount = 0;
+    jlong lowSampleCount = 0;
+
+    auto isPulseLengthValid = [samplesPerSymbol, errorTolerance](jlong length) {
+        for (int n = 1; n * samplesPerSymbol <= length + errorTolerance; ++n) {
+            if (std::abs(length - n * samplesPerSymbol) <= errorTolerance) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (jlong byteIndex = 0; byteIndex < dataBuffer.size(); ++byteIndex) {
+        char currentByte = dataBuffer[byteIndex];
+        for (int bitIndex = 0; bitIndex <= 7; bitIndex++) {
+            bool currentState = (currentByte & (1 << bitIndex)) != 0;
+
+            if (!isHigh && currentState) {
+                // Transition from LOW to HIGH
+                isHigh = true;
+                startOfPulse = byteIndex * 8 + bitIndex;
+                highSampleCount = 1;
+                lowSampleCount = 0;
+            } else if (isHigh) {
+                if (currentState) {
+                    // Continue counting HIGH samples, adding LOW samples if within error tolerance
+                    if (lowSampleCount <= errorTolerance) {
+                        highSampleCount += lowSampleCount + 1;
+                        lowSampleCount = 0;
+                    } else {
+                        // Check if the collected pulse length is valid before starting a new count
+                        if (isPulseLengthValid(highSampleCount)) {
+                            edges.push_back(startOfPulse); // Start of previous valid pulse
+                            edges.push_back(byteIndex * 8 + bitIndex - lowSampleCount - 1); // End of previous valid pulse
+                        }
+                        // Start a new pulse count
+                        startOfPulse = byteIndex * 8 + bitIndex;
+                        highSampleCount = 1;
+                        lowSampleCount = 0;
+                    }
+                } else {
+                    // Increment LOW sample count within a HIGH pulse
+                    lowSampleCount++;
+                }
+            }
+        }
+    }
+
+    // Check for a trailing HIGH pulse at the end of data
+    if (isHigh && isPulseLengthValid(highSampleCount)) {
+        edges.push_back(startOfPulse); // Start of pulse
+        edges.push_back(dataBuffer.size() * 8 - 1); // End of pulse
+    }
+
+    jlongArray result = env->NewLongArray(edges.size());
+    env->SetLongArrayRegion(result, 0, edges.size(), edges.data());
+
+    return result;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_extractBitsFromEdges(JNIEnv *env, jobject, jlongArray edgeArray, jint samplesPerSymbol) {
+    jsize edgeCount = env->GetArrayLength(edgeArray);
+    jlong *edges = env->GetLongArrayElements(edgeArray, NULL);
+
+    std::vector<jbyte> bitStream;
+    jbyte currentByte = 0;
+    int bitPosition = 0;
+
+    for (jsize i = 0; i < edgeCount - 1; i++) {
+        jlong pulseLength = edges[i + 1] - edges[i];
+        bool isHigh = i % 2 == 0; // Even index: HIGH pulse, Odd index: LOW pulse
+        int numBits = static_cast<int>((pulseLength + samplesPerSymbol / 2) / samplesPerSymbol);
+
+        for (int j = 0; j < numBits; j++) {
+            currentByte |= (isHigh ? 1 : 0) << (7 - bitPosition); // Set bit for HIGH pulse
+            bitPosition++;
+
+            if (bitPosition == 8) {
+                bitStream.push_back(currentByte);
+                currentByte = 0;
+                bitPosition = 0;
+            }
+        }
+    }
+
+    if (bitPosition > 0) {
+        bitStream.push_back(currentByte);
+    }
+
+    env->ReleaseLongArrayElements(edgeArray, edges, JNI_ABORT);
+
+    jbyteArray byteArray = env->NewByteArray(bitStream.size());
+    env->SetByteArrayRegion(byteArray, 0, bitStream.size(), &bitStream[0]);
+
+    return byteArray;
+}
+
+
+
 }

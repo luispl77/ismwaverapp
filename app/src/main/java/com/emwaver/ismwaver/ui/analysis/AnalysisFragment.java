@@ -27,6 +27,7 @@ import com.emwaver.ismwaver.SerialService;
 import com.emwaver.ismwaver.databinding.FragmentAnalysisBinding;
 import com.emwaver.ismwaver.databinding.FragmentRawModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
+import com.emwaver.ismwaver.jsobjects.Utils;
 import com.emwaver.ismwaver.ui.rawmode.RawModeViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
@@ -40,6 +41,7 @@ import com.github.mikephil.charting.listener.OnChartGestureListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -64,12 +66,9 @@ public class AnalysisFragment extends Fragment {
     private float currentZoomLevel = 1.0f;
 
     private int prevRangeStart = 0;
-    private int prevRangeEnd = 0;
-    private int numberBins = 200;
+    private int prevRangeEnd = 10000;
+    private int numberBins = 500;
 
-    public ScheduledExecutorService scheduler;
-
-    private final int refreshRate = 100; // Refresh rate in milliseconds
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -95,24 +94,22 @@ public class AnalysisFragment extends Fragment {
         binding = FragmentAnalysisBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
-        // Todo: make executor function only execute when its recording
-
         chart = binding.chart;
 
         analysisViewModel = new ViewModelProvider(this).get(AnalysisViewModel.class);
 
-        binding.showPulseEdgesButton.setOnClickListener(v -> {
-            //toggleVerticalLinesOnChart(serialService.findPulseEdges(40, 10, 4));
+        binding.reconstructButton.setOnClickListener(v -> {
+            toggleVerticalLinesOnChart(serialService.findHighEdges(40, 10));
+            byte [] reconstructedSignal = serialService.extractBitsFromEdges(serialService.findHighEdges(40, 10), 40);
+            logBuffer(reconstructedSignal);
+            binding.reconstructedSinalEditText.setText(CC1101.bytesToHexString(reconstructedSignal));
         });
 
         binding.fillTeslaButton.setOnClickListener(v -> {
             serialService.setMode(Constants.RECEIVE);
-            fillBufferWithTesla();
-            refreshChart();
+            fillBufferWithTesla(0.001);
             serialService.setMode(Constants.TERMINAL);
-
+            refreshChart();
         });
 
         initChart();
@@ -160,7 +157,7 @@ public class AnalysisFragment extends Fragment {
                     analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
                     analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-                    Log.i("ranges", "start:" + analysisViewModel.getVisibleRangeStart() + " end:" + analysisViewModel.getVisibleRangeEnd());
+                    //Log.i("ranges", "start:" + analysisViewModel.getVisibleRangeStart() + " end:" + analysisViewModel.getVisibleRangeEnd());
                     updateChart(compressDataAndGetDataSet(analysisViewModel.getVisibleRangeStart(), analysisViewModel.getVisibleRangeEnd(), numberBins));
                 }
             }
@@ -189,7 +186,7 @@ public class AnalysisFragment extends Fragment {
                     prevRangeStart = visibleRangeStart;
                     prevRangeEnd = visibleRangeEnd;
 
-                    Log.i("ranges", "start:" + visibleRangeStart + " end:" + visibleRangeEnd);
+                    //Log.i("ranges", "start:" + visibleRangeStart + " end:" + visibleRangeEnd);
                     updateChart(compressDataAndGetDataSet(visibleRangeStart, visibleRangeEnd, numberBins));
                 }
             }
@@ -201,7 +198,7 @@ public class AnalysisFragment extends Fragment {
 
 
 
-    private void fillBufferWithTesla() {
+    private void fillBufferWithTesla(double noise) {
         byte[] teslaSignal = {(byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0x8A, (byte) 0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
         int samplesPerBit = 40; // 40 samples per bit since 400us per bit and 10us sampling rate
         int signalSize = teslaSignal.length * 8 * samplesPerBit;
@@ -237,8 +234,37 @@ public class AnalysisFragment extends Fragment {
         }
         //logBuffer(dataBuffer);
         Log.i("dataBuffer", "size: "+dataBuffer.length);
+        addNoiseToSignal(dataBuffer, noise);
         serialService.addToBuffer(dataBuffer);
         Log.i("data buflen", "size: "+serialService.getDataBufferLength());
+
+    }
+
+    private void addNoiseToSignal(byte[] dataBuffer, double noiseProbability) {
+        Random random = new Random();
+        for (int i = 0; i < dataBuffer.length; i++) {
+            for (int bit = 0; bit < 8; bit++) {
+                if (random.nextDouble() < noiseProbability) {
+                    dataBuffer[i] ^= (1 << bit); // Flip the bit
+                }
+            }
+        }
+    }
+
+    private void logBuffer(byte[] buffer) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : buffer) {
+            for (int i = 7; i >= 0; i--) {
+                sb.append((b >> i) & 1); // Append '1' for set bit, '0' for clear bit
+            }
+        }
+        Log.i("BufferLog", sb.toString());
+        sb = new StringBuilder();
+        for (byte b : buffer) {
+            sb.append(String.format("%02X ", b));
+        }
+        Log.i("BufferLog", sb.toString());
+        Log.i("BufferLog", "length: " + buffer.length*8);
     }
 
     public void initChart() {
@@ -267,20 +293,18 @@ public class AnalysisFragment extends Fragment {
     }
 
     private void refreshChart() {
-        if(serialService.getRecordingContinuous()){
-            // Get the current visible range
-            int visibleRangeStart = (int) chart.getLowestVisibleX();
-            int visibleRangeEnd = (int) chart.getHighestVisibleX();
-            analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
-            analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
+        // Get the current visible range
+        int visibleRangeStart = (int) chart.getLowestVisibleX();
+        int visibleRangeEnd = (int) chart.getHighestVisibleX();
+        analysisViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
+        analysisViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-            chartMaxX = serialService.getDataBufferLength()*8;
-            XAxis xAxis = chart.getXAxis();
-            xAxis.setAxisMinimum(chartMinX);
-            xAxis.setAxisMaximum(chartMaxX);
-            // Update the chart
-            getActivity().runOnUiThread(() -> updateChart(compressDataAndGetDataSet(visibleRangeStart, visibleRangeEnd, 1000)));
-        }
+        chartMaxX = serialService.getDataBufferLength()*8;
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setAxisMinimum(chartMinX);
+        xAxis.setAxisMaximum(chartMaxX);
+        // Update the chart
+        getActivity().runOnUiThread(() -> updateChart(compressDataAndGetDataSet(visibleRangeStart, visibleRangeEnd, numberBins)));
     }
 
     private LineDataSet compressDataAndGetDataSet(int rangeStart, int rangeEnd, int numberBins) {
@@ -347,15 +371,11 @@ public class AnalysisFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
+
 
     }
     @Override
     public void onPause() {
         super.onPause();
-        if (scheduler != null && !scheduler.isShutdown()) {
-            scheduler.shutdownNow();
-        }
     }
 }

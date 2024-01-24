@@ -424,7 +424,7 @@ public class CC1101 {
 
         return false;
     }
-    public String bytesToHexString(byte[] bytes) {
+    public static String bytesToHexString(byte[] bytes) { //todo: verify change to static does not break anything
         StringBuilder hexString = new StringBuilder();
         for (byte b : bytes) {
             String hex = Integer.toHexString(0xFF & b);

@@ -44,6 +44,9 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     public native boolean getRecordingContinuous();
 
     public native long [] findPulseEdges(int samplesPerSymbol, int errorTolerance, int maxLowPulseMultiplier);
+    public native long [] findHighPulses(int samplesPerSymbol, int errorTolerance);
+    public native long [] findHighEdges(int samplesPerSymbol, int errorTolerance);
+    public native byte [] extractBitsFromEdges(long [] edgeArray, int samplesPerSymbol);
 
     public native int getStatusNumber();
 

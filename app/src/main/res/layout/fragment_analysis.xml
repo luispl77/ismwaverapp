@@ -11,15 +11,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="fill"
-        android:layout_marginLeft="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/showPulseEdgesButton" />
+        app:layout_constraintStart_toEndOf="@+id/reconstructButton" />
 
     <Button
-        android:id="@+id/showPulseEdgesButton"
+        android:id="@+id/reconstructButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="edges"
+        android:text="reconstruct"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -34,9 +33,9 @@
 
 
     <EditText
-        android:id="@+id/recontructedSinalEditText"
-        android:layout_width="411dp"
+        android:id="@+id/reconstructedSinalEditText"
         android:layout_height="100dp"
+        android:layout_width="0dp"
         android:background="#EEE"
         android:gravity="top|start"
         android:hint="Reconstructed sinal..."
@@ -46,7 +45,7 @@
         android:textColor="#000"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chart" />
+        app:layout_constraintTop_toBottomOf="@+id/chart"  />
 
 
     <EditText
@@ -57,9 +56,10 @@
         android:imeOptions="actionDone"
         android:inputType="number"
         android:padding="8dp"
+        android:text="40"
         android:textColor="#000"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/recontructedSinalEditText" />
+        app:layout_constraintTop_toBottomOf="@+id/reconstructedSinalEditText" />
 
     <EditText
         android:id="@+id/errorToleranceEditText"
@@ -69,6 +69,7 @@
         android:imeOptions="actionDone"
         android:inputType="number"
         android:padding="8dp"
+        android:text="10"
         android:textColor="#000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
