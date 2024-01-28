@@ -19,7 +19,29 @@ std::vector<char> commandBuffer;
 
 extern "C" {
 
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getDataBuffer(JNIEnv *env, jobject) {
+    if (dataBuffer.empty()) {
+        return nullptr;
+    }
 
+    jbyteArray javaArray = env->NewByteArray(dataBuffer.size());
+    env->SetByteArrayRegion(javaArray, 0, dataBuffer.size(), reinterpret_cast<const jbyte*>(dataBuffer.data()));
+    return javaArray;
+}
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_loadDataBuffer(JNIEnv *env, jobject, jbyteArray data) {
+    jsize dataSize = env->GetArrayLength(data);
+    jbyte* dataBytes = env->GetByteArrayElements(data, 0);
+
+    // Clear existing data in dataBuffer
+    dataBuffer.clear();
+
+    // Load new data
+    for (int i = 0; i < dataSize; i++) {
+        dataBuffer.push_back(static_cast<char>(dataBytes[i]));
+    }
+
+    env->ReleaseByteArrayElements(data, dataBytes, 0);
+}
 JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_SerialService_getRecordingContinuous(JNIEnv *env, jobject) {
     return currentMode == RECEIVE;
 }
@@ -326,7 +348,6 @@ JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findHighEdg
 
     return result;
 }
-
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_extractBitsFromEdges(JNIEnv *env, jobject, jlongArray edgeArray, jint samplesPerSymbol) {
     jsize edgeCount = env->GetArrayLength(edgeArray);
     jlong *edges = env->GetLongArrayElements(edgeArray, NULL);

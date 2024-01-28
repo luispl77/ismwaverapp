@@ -1,24 +1,34 @@
 package com.emwaver.ismwaver.ui.analysis;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.os.Environment;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Toast;
 
 import com.emwaver.ismwaver.Constants;
@@ -39,6 +49,12 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -48,28 +64,21 @@ import java.util.concurrent.TimeUnit;
 
 public class AnalysisFragment extends Fragment {
 
-
-
     private AnalysisViewModel analysisViewModel;
-
     private @NonNull FragmentAnalysisBinding binding;
-
     private SerialService serialService;
-
     LineChart chart = null;
-
     private int chartMinX = 0;
     private int chartMaxX = 100000;
-
     private boolean isServiceBound = false;
-
     private float currentZoomLevel = 1.0f;
-
     private int prevRangeStart = 0;
     private int prevRangeEnd = 10000;
     private int numberBins = 500;
-
-
+    private int errorTolerance = 10;
+    private int samplesPerSymbol = 40;
+    private ActivityResultLauncher<Intent> createFileLauncher;
+    private ActivityResultLauncher<String[]> openFileLauncher;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -99,8 +108,8 @@ public class AnalysisFragment extends Fragment {
         analysisViewModel = new ViewModelProvider(this).get(AnalysisViewModel.class);
 
         binding.reconstructButton.setOnClickListener(v -> {
-            toggleVerticalLinesOnChart(serialService.findHighEdges(40, 10));
-            byte [] reconstructedSignal = serialService.extractBitsFromEdges(serialService.findHighEdges(40, 10), 40);
+            toggleVerticalLinesOnChart(serialService.findHighEdges(samplesPerSymbol, errorTolerance));
+            byte [] reconstructedSignal = serialService.extractBitsFromEdges(serialService.findHighEdges(samplesPerSymbol, errorTolerance), samplesPerSymbol);
             logBuffer(reconstructedSignal);
             binding.reconstructedSinalEditText.setText(CC1101.bytesToHexString(reconstructedSignal));
         });
@@ -110,6 +119,68 @@ public class AnalysisFragment extends Fragment {
             fillBufferWithTesla(0.001);
             serialService.setMode(Constants.TERMINAL);
             refreshChart();
+        });
+
+        binding.errorToleranceEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                new Thread(() -> {
+                    String deviationStr = binding.errorToleranceEditText.getText().toString().trim();
+                    // Parse the string to an integer
+                    try {
+                        errorTolerance = Integer.parseInt(deviationStr);
+                        showToastOnUiThread("error tolerance set to: " + errorTolerance);
+
+                    } catch (NumberFormatException e) {
+                        showToastOnUiThread("Invalid error tolerance entered");
+                    }
+                }).start();
+                return true; // Consume the action
+            }
+            return false; // Pass the event on to other listeners
+        });
+
+        binding.samplesPerSymbolEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                new Thread(() -> {
+                    String deviationStr = binding.samplesPerSymbolEditText.getText().toString().trim();
+                    // Parse the string to an integer
+                    try {
+                        samplesPerSymbol = Integer.parseInt(deviationStr);
+                        showToastOnUiThread("samples per symbol set to: " + samplesPerSymbol);
+
+                    } catch (NumberFormatException e) {
+                        showToastOnUiThread("Invalid samples per symbol entered");
+                    }
+                }).start();
+                return true; // Consume the action
+            }
+            return false; // Pass the event on to other listeners
+        });
+
+        binding.numberPointsEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                new Thread(() -> {
+                    String deviationStr = binding.numberPointsEditText.getText().toString().trim();
+                    // Parse the string to an integer
+                    try {
+                        numberBins = Integer.parseInt(deviationStr);
+                        showToastOnUiThread("numberBins set to: " + numberBins);
+
+                    } catch (NumberFormatException e) {
+                        showToastOnUiThread("Invalid numberBins entered");
+                    }
+                }).start();
+                return true; // Consume the action
+            }
+            return false; // Pass the event on to other listeners
+        });
+
+        binding.createFileButton.setOnClickListener(v -> {
+            buttonCreateFile();
+        });
+
+        binding.openFileButton.setOnClickListener(v -> {
+            buttonOpenFile();
         });
 
         initChart();
@@ -192,10 +263,24 @@ public class AnalysisFragment extends Fragment {
             }
         });
 
+        createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    saveFileToUri(uri);
+                }
+            }
+        });
+
+        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            // Handle the Uri
+            if (uri != null) {
+                loadFileToBuffer(uri);
+            }
+        });
 
         return root;
     }
-
 
 
     private void fillBufferWithTesla(double noise) {
@@ -355,6 +440,13 @@ public class AnalysisFragment extends Fragment {
         }
     }
 
+    public void showToastOnUiThread(final String message) {
+        if (isAdded()) { // Check if Fragment is currently added to its activity
+            getActivity().runOnUiThread(() ->
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
+        }
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -378,4 +470,62 @@ public class AnalysisFragment extends Fragment {
     public void onPause() {
         super.onPause();
     }
+
+    private void saveFileToUri(Uri uri) {
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(uri)) {
+            outstream.write(serialService.getDataBuffer());
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
+    }
+
+
+    public void buttonOpenFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
+        openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
+    }
+
+
+
+    public void buttonCreateFile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // Set MIME Type as per your requirement
+        intent.putExtra(Intent.EXTRA_TITLE, "mySignal.raw");
+
+        createFileLauncher.launch(intent);
+    }
+
+
+    private void loadFileToBuffer(Uri uri) {
+        try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
+            byte[] fileData = readBytes(instream);
+            // Now send this data to your native code to populate dataBuffer
+            serialService.loadDataBuffer(fileData);
+            refreshChart();
+        } catch (IOException e) {
+            Log.e("filesys", "Error reading from file", e);
+        }
+    }
+
+    private byte[] readBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
+
+        int len = 0;
+        while ((len = inputStream.read(buffer)) != -1) {
+            byteBuffer.write(buffer, 0, len);
+        }
+
+        return byteBuffer.toByteArray();
+    }
+
+
+
+
+
+
 }

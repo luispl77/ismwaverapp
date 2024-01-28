@@ -240,43 +240,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
         return root;
     }
 
-    private void fillBufferWithTesla() {
-        byte[] teslaSignal = {(byte) 0xAA, (byte) 0xAA, (byte) 0xAA, (byte) 0x8A, (byte) 0xCB, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
-        int samplesPerBit = 40; // 40 samples per bit since 400us per bit and 10us sampling rate
-        int signalSize = teslaSignal.length * 8 * samplesPerBit;
-        int paddingSize = signalSize; // Same size as the signal
-        int bufferSize = signalSize + 2 * paddingSize;
 
-        byte[] dataBuffer = new byte[bufferSize / 8 + (bufferSize % 8 != 0 ? 1 : 0)]; // Each byte holds 8 bits
-        int bitIndex = paddingSize;
-
-        // Fill buffer with padding before the Tesla signal
-        for (int i = 0; i < paddingSize; i++) {
-            dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
-        }
-
-        // Fill buffer with Tesla signal
-        for (byte teslaByte : teslaSignal) {
-            for (int i = 7; i >= 0; i--) {
-                boolean isHigh = ((teslaByte >> i) & 1) == 1;
-                for (int j = 0; j < samplesPerBit; j++) {
-                    if (isHigh) {
-                        dataBuffer[bitIndex / 8] |= (1 << (7 - bitIndex % 8));
-                    } else {
-                        dataBuffer[bitIndex / 8] &= ~(1 << (7 - bitIndex % 8));
-                    }
-                    bitIndex++;
-                }
-            }
-        }
-
-        // Fill buffer with padding after the Tesla signal
-        for (int i = bitIndex; i < bufferSize; i++) {
-            dataBuffer[i / 8] &= ~(1 << (7 - i % 8));
-        }
-        logBuffer(dataBuffer);
-        serialService.addToBuffer(dataBuffer);
-    }
 
     private void transmitBuffer() {
         int nativeBufferSize = serialService.getDataBufferLength(); // Existing JNI method to get the native buffer size
@@ -314,22 +278,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
             }
         }
         serialService.clearCommandBuffer();
-    }
-
-    private void logBuffer(byte[] buffer) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : buffer) {
-            for (int i = 7; i >= 0; i--) {
-                sb.append((b >> i) & 1); // Append '1' for set bit, '0' for clear bit
-            }
-        }
-        Log.i("BufferLog", sb.toString());
-        sb = new StringBuilder();
-        for (byte b : buffer) {
-            sb.append(String.format("%02X ", b));
-        }
-        Log.i("BufferLog", sb.toString());
-        Log.i("BufferLog", "length: " + buffer.length*8);
     }
 
     private int getLogStatus(){
@@ -382,7 +330,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
             continuousmodeViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
             continuousmodeViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-            chartMaxX = serialService.getDataBufferLength();
+            chartMaxX = serialService.getDataBufferLength()*8;
             XAxis xAxis = chart.getXAxis();
             xAxis.setAxisMinimum(chartMinX);
             xAxis.setAxisMaximum(chartMaxX);
@@ -422,22 +370,6 @@ public class RawModeFragment extends Fragment implements CommandSender {
         chart.invalidate();
     }
 
-    private void toggleVerticalLinesOnChart(long[] lineTimestamps) {
-        XAxis xAxis = chart.getXAxis();
-
-        if (!xAxis.getLimitLines().isEmpty()) {
-            xAxis.removeAllLimitLines();
-            Toast.makeText(getContext(), "Removed vertical lines", Toast.LENGTH_SHORT).show();
-        } else {
-            for (long timestamp : lineTimestamps) {
-                LimitLine line = new LimitLine(timestamp);
-                line.setLineColor(Color.RED);
-                line.setLineWidth(2f);
-                xAxis.addLimitLine(line);
-            }
-            Toast.makeText(getContext(), "Added " + lineTimestamps.length + " vertical lines", Toast.LENGTH_SHORT).show();
-        }
-    }
 
 
     private void unbindServiceIfNeeded() {
