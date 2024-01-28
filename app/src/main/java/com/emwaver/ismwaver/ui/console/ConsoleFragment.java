@@ -1,5 +1,6 @@
 package com.emwaver.ismwaver.ui.console;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -7,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.Spannable;
@@ -24,6 +26,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -40,12 +44,15 @@ import com.emwaver.ismwaver.jsobjects.Serial;
 import com.emwaver.ismwaver.jsobjects.Utils;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 
@@ -61,6 +68,9 @@ public class ConsoleFragment extends Fragment implements CommandSender {
     private Utils utils;
     private SerialService serialService;
     private boolean isServiceBound = false;
+    private ActivityResultLauncher<Intent> createFileLauncher;
+    private ActivityResultLauncher<String[]> openFileLauncher;
+    private Uri currentFileUri;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -101,6 +111,8 @@ public class ConsoleFragment extends Fragment implements CommandSender {
             terminalText.setText(spannable);
         });
 
+        loadScriptFromAssets();
+
         cc1101 = new CC1101(this);
 
         serial = new Serial(getContext(), this);
@@ -109,25 +121,20 @@ public class ConsoleFragment extends Fragment implements CommandSender {
 
         utils = new Utils(getContext());
 
-        initializeScripts();
+        //initializeScripts();
 
-        String[] fileNames = getJavaScriptFileNames();
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, fileNames);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerFiles.setAdapter(adapter);
-        binding.spinnerFiles.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                loadFileContent(fileNames[position]);
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
+
+        binding.saveFileAsButton.setOnClickListener(v -> {
+            buttonCreateFile();
         });
 
-        binding.buttonSave.setOnClickListener(v -> saveFile());
+        binding.saveFileButton.setOnClickListener(v -> {
+            //buttonSaveFile();
+        });
 
-        binding.buttonRename.setOnClickListener(v -> renameFile());
+        binding.openFileButton.setOnClickListener(v -> {
+            buttonOpenFile();
+        });
 
         binding.executeScriptButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -181,6 +188,22 @@ public class ConsoleFragment extends Fragment implements CommandSender {
             }
         });
 
+        createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    saveFileToUri(uri);
+                }
+            }
+        });
+
+        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            if (uri != null) {
+                currentFileUri = uri; // Store the Uri
+                loadFileToEditText(uri);
+            }
+        });
+
         return root;
     }
 
@@ -192,92 +215,6 @@ public class ConsoleFragment extends Fragment implements CommandSender {
     }
     private boolean isFragmentActive() {
         return isAdded() && !isDetached() && !isRemoving();
-    }
-    private void loadFileContent(String fileName) {
-        File file = new File(getContext().getFilesDir(), fileName);
-        if (file.exists()) {
-            try {
-                FileInputStream fis = new FileInputStream(file);
-                byte[] buffer = new byte[(int) file.length()];
-                fis.read(buffer);
-                fis.close();
-                String content = new String(buffer, "UTF-8");
-                binding.jsCodeInput.setText(content);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                showToastOnUiThread("Error loading file");
-            }
-        }
-    }
-    private void saveFile() {
-        String selectedFile = binding.spinnerFiles.getSelectedItem().toString();
-        String fileContent = binding.jsCodeInput.getText().toString();
-
-        try {
-            FileOutputStream fos = getContext().openFileOutput(selectedFile, getContext().MODE_PRIVATE);
-            fos.write(fileContent.getBytes());
-            fos.close();
-            showToastOnUiThread("File saved successfully");
-        } catch (IOException e) {
-            e.printStackTrace();
-            showToastOnUiThread("Error saving file");
-        }
-    }
-    private void renameFile() {
-        String oldFileName = binding.spinnerFiles.getSelectedItem().toString();
-        String newFileName = binding.editTextNewFileName.getText().toString();
-
-        File oldFile = new File(getContext().getFilesDir(), oldFileName);
-        File newFile = new File(getContext().getFilesDir(), newFileName);
-
-        if (oldFile.renameTo(newFile)) {
-            showToastOnUiThread("File renamed successfully");
-            // Update spinner and any other relevant UI components
-            // Refresh file names in the spinner
-        } else {
-            showToastOnUiThread("Error renaming file");
-        }
-    }
-    private String[] getJavaScriptFileNames() {
-        File dir = getContext().getFilesDir();
-        FilenameFilter filter = (dir1, name) -> name.endsWith(".js");
-        File[] files = dir.listFiles(filter);
-
-        if (files != null) {
-            String[] fileNames = new String[files.length];
-            for (int i = 0; i < files.length; i++) {
-                fileNames[i] = files[i].getName();
-            }
-            return fileNames;
-        } else {
-            // Fallback to default names if no files found
-            return new String[]{"script_tesla.js", "script_mercedes.js", "script_receive_tesla.js"};
-        }
-    }
-    private void initializeScripts() {
-        String[] fileNames = {"script_tesla.js", "script_mercedes.js", "script_receive_tesla.js"}; // Predefined list of filenames
-        for (String fileName : fileNames) {
-            File file = new File(getContext().getFilesDir(), fileName);
-            if (!file.exists()) {
-                copyFileFromAssets(fileName);
-            }
-        }
-    }
-    private void copyFileFromAssets(String fileName) {
-        try {
-            InputStream is = getContext().getAssets().open(fileName);
-            FileOutputStream fos = new FileOutputStream(new File(getContext().getFilesDir(), fileName));
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = is.read(buffer)) != -1) {
-                fos.write(buffer, 0, read);
-            }
-            fos.flush();
-            fos.close();
-            is.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
     public void showToastOnUiThread(final String message) {
         if (isAdded()) { // Check if Fragment is currently added to its activity
@@ -377,6 +314,75 @@ public class ConsoleFragment extends Fragment implements CommandSender {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null; // Important for avoiding memory leaks
+    }
+
+    public void buttonCreateFile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // Set MIME Type as per your requirement
+        intent.putExtra(Intent.EXTRA_TITLE, "myScript.js");
+
+        createFileLauncher.launch(intent);
+    }
+
+    public void buttonOpenFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
+        openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
+    }
+
+    private void saveFileToUri(Uri uri) {
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(uri)) {
+            String fileContent = binding.jsCodeInput.getText().toString();
+            outstream.write(fileContent.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
+    }
+
+    private void loadFileToEditText(Uri uri) {
+        try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
+            byte[] fileData = readBytes(instream);
+            String fileContent = new String(fileData, StandardCharsets.UTF_8);
+            binding.jsCodeInput.setText(fileContent);
+        } catch (IOException e) {
+            Log.e("filesys", "Error reading from file", e);
+        }
+    }
+
+    private byte[] readBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
+
+        int len = 0;
+        while ((len = inputStream.read(buffer)) != -1) {
+            byteBuffer.write(buffer, 0, len);
+        }
+
+        return byteBuffer.toByteArray();
+    }
+
+    private void loadScriptFromAssets() {
+        try {
+            // Open an input stream to read from the assets folder
+            InputStream is = getActivity().getAssets().open("script_receive_tesla.js");
+            int size = is.available();
+
+            // Read the entire script into a byte array
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+
+            // Convert the byte array to a String
+            String scriptContent = new String(buffer, StandardCharsets.UTF_8);
+
+            // Set the script content to the EditText
+            binding.jsCodeInput.setText(scriptContent);
+        } catch (IOException e) {
+            Log.e("assets", "Error loading script from assets", e);
+        }
     }
 
 

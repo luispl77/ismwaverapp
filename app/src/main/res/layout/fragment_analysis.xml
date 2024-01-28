@@ -11,32 +11,40 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="fill"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/reconstructButton" />
+        app:layout_constraintBottom_toTopOf="@+id/reconstructButton"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/reconstructButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="reconstruct"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/saveFileAsButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/createFileButton"
+        android:id="@+id/saveFileButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="+file"
+        android:text="save"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/fillTeslaButton" />
+        app:layout_constraintStart_toEndOf="@+id/saveFileAsButton" />
+
+    <Button
+        android:id="@+id/saveFileAsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="save as"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/openFileButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="file"
+        android:text="open"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/createFileButton" />" />
+        app:layout_constraintStart_toEndOf="@+id/saveFileButton" />
 
 
     <com.github.mikephil.charting.charts.LineChart
@@ -50,8 +58,8 @@
 
     <EditText
         android:id="@+id/reconstructedSinalEditText"
-        android:layout_height="100dp"
         android:layout_width="0dp"
+        android:layout_height="100dp"
         android:background="#EEE"
         android:gravity="top|start"
         android:hint="Reconstructed sinal..."
@@ -61,7 +69,7 @@
         android:textColor="#000"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/chart"  />
+        app:layout_constraintTop_toBottomOf="@+id/chart" />
 
 
     <EditText
@@ -102,7 +110,6 @@
         android:textColor="#000"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/errorToleranceEditText" />
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,5 +1,3 @@
-//script 3
-
 function initReceive() {
     CC1101.spiStrobe(0x30);
     CC1101.sendInitRx();

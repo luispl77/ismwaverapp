@@ -94,6 +94,7 @@ public class AnalysisFragment extends Fragment {
             Log.i("service binding", "onServiceDisconnected");
         }
     };
+    private Uri currentFileUri;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -175,8 +176,12 @@ public class AnalysisFragment extends Fragment {
             return false; // Pass the event on to other listeners
         });
 
-        binding.createFileButton.setOnClickListener(v -> {
+        binding.saveFileAsButton.setOnClickListener(v -> {
             buttonCreateFile();
+        });
+
+        binding.saveFileButton.setOnClickListener(v -> {
+            buttonSaveFile();
         });
 
         binding.openFileButton.setOnClickListener(v -> {
@@ -273,8 +278,8 @@ public class AnalysisFragment extends Fragment {
         });
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
-            // Handle the Uri
             if (uri != null) {
+                currentFileUri = uri; // Store the Uri
                 loadFileToBuffer(uri);
             }
         });
@@ -471,13 +476,7 @@ public class AnalysisFragment extends Fragment {
         super.onPause();
     }
 
-    private void saveFileToUri(Uri uri) {
-        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(uri)) {
-            outstream.write(serialService.getDataBuffer());
-        } catch (IOException e) {
-            Log.e("filesys", "Error writing to file", e);
-        }
-    }
+
 
 
     public void buttonOpenFile() {
@@ -486,8 +485,6 @@ public class AnalysisFragment extends Fragment {
         intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
         openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
     }
-
-
 
     public void buttonCreateFile() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -498,6 +495,17 @@ public class AnalysisFragment extends Fragment {
         createFileLauncher.launch(intent);
     }
 
+    public void buttonSaveFile() {
+        writeChangesToFile();
+    }
+
+    private void saveFileToUri(Uri uri) {
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(uri)) {
+            outstream.write(serialService.getDataBuffer());
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
+    }
 
     private void loadFileToBuffer(Uri uri) {
         try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
@@ -521,6 +529,20 @@ public class AnalysisFragment extends Fragment {
         }
 
         return byteBuffer.toByteArray();
+    }
+
+    private void writeChangesToFile() {
+        if (currentFileUri == null) {
+            Log.e("filesys", "No file is currently open");
+            return;
+        }
+
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(currentFileUri)) {
+            byte[] dataBuffer = serialService.getDataBuffer(); // Get the updated data
+            outstream.write(dataBuffer);
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
     }
 
 
