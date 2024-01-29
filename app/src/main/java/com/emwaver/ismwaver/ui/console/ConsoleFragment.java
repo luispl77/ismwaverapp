@@ -11,10 +11,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.text.Spannable;
-import android.text.SpannableStringBuilder;
 import android.text.method.ScrollingMovementMethod;
-import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -51,10 +48,10 @@ import java.util.Objects;
 public class ConsoleFragment extends Fragment {
     private FragmentConsoleBinding binding;
     private EditText terminalTextInput;
-    private TextView terminalText;
-    private ConsoleViewModel terminalViewModel;
+    private TextView consoleText;
+    private ConsoleViewModel consoleViewModel;
     private boolean filterEnabled = true;
-    private CC1101 cc1101;
+    private CC1101 cc;
     private Console console;
     private Utils utils;
     private SerialService serialService;
@@ -69,7 +66,7 @@ public class ConsoleFragment extends Fragment {
             serialService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            cc1101 = new CC1101(serialService);
+            cc = new CC1101(serialService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -84,35 +81,23 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
-        terminalText = binding.terminalText; //get bindings
+        consoleText = binding.consoleText; //get bindings
         terminalTextInput = binding.terminalTextInput;
-        binding.terminalText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
+        consoleText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
         // Observe the LiveData and update the UI accordingly
-        terminalViewModel = new ViewModelProvider(this).get(ConsoleViewModel.class);
-        terminalViewModel.getTerminalData().observe(getViewLifecycleOwner(), data -> {
-            SpannableStringBuilder spannable = new SpannableStringBuilder();
-            for (ConsoleViewModel.TextWithColor textWithColor : data) {
-                int start = spannable.length();
-                spannable.append(textWithColor.getText());
-                int end = spannable.length();
+        consoleViewModel = new ViewModelProvider(this).get(ConsoleViewModel.class);
 
-                spannable.setSpan(new ForegroundColorSpan(textWithColor.getColor()),
-                        start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
-            terminalText.setText(spannable);
+        consoleViewModel.getConsoleData().observe(getViewLifecycleOwner(), data -> {
+            consoleText.setText(data);
         });
 
         loadScriptFromAssets();
 
 
-
-
         console = new Console(getContext());
 
         utils = new Utils(getContext());
-
-        //initializeScripts();
 
 
         binding.saveFileAsButton.setOnClickListener(v -> {
@@ -133,13 +118,13 @@ public class ConsoleFragment extends Fragment {
                 new Thread(() -> {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
-                        ScriptsEngine scriptsEngine = new ScriptsEngine(cc1101, console, utils);
+                        ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
                         serialService.changeStatus("Running script...");
                         String result = scriptsEngine.executeJavaScript(jsCode);
-                        serialService.sendStringIntent("\n>", "user_input");
+                        serialService.sendString("\n>");
                         if(result != null){
-                            serialService.sendStringIntent(result, "javascript");
-                            serialService.sendStringIntent("\n>", "user_input");
+                            serialService.sendString(result);
+                            serialService.sendString("\n>");
                         }
                     } finally {
                         unbindServiceIfNeeded();
@@ -153,7 +138,7 @@ public class ConsoleFragment extends Fragment {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
                 serialService.write(userInput.getBytes()); // Send to SerialService for transmitting over USB
-                terminalViewModel.appendData(userInput+"\n>", ContextCompat.getColor(getContext(), R.color.user_input));
+                consoleViewModel.appendData(userInput+"\n>");
                 terminalTextInput.setText("");
             }
             return false;
@@ -174,8 +159,7 @@ public class ConsoleFragment extends Fragment {
         binding.clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                terminalViewModel.setData("");
-                terminalText.setText("");
+                consoleViewModel.clearConsoleData();
             }
         });
 
@@ -221,67 +205,12 @@ public class ConsoleFragment extends Fragment {
             Intent intent = new Intent(getActivity(), SerialService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
-        // Register usbDataReceiver for listening to new data received on USB port
-        IntentFilter filter = new IntentFilter(Constants.ACTION_USB_DATA_RECEIVED);
-        requireActivity().registerReceiver(usbDataReceiver, filter); //todo: fix visibility of broadcast receivers
     }
-    private final BroadcastReceiver usbDataReceiver = new BroadcastReceiver() {
-        // Broadcast receiver for data coming from SerialService background USB service. Updates console live UI.
-        private StringBuilder buffer = new StringBuilder();
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (Constants.ACTION_USB_DATA_RECEIVED.equals(intent.getAction())) {
-                byte[] data = intent.getByteArrayExtra("data");
-                String source = intent.getStringExtra("source"); // Retrieve the source
-                if(Objects.equals(source, "serial")){
-                    if (filterEnabled) {
-                        buffer.append(new String(data)); // Append new data to the buffer
-                        processBufferForStrings();      // Process buffer for strings encapsulated within <STR> and </STR>
-                    } else {
-                        displayAllData(data);           // Display all data as it is
-                    }
-                }
-                else if(Objects.equals(source, "javascript")){
-                    terminalViewModel.appendData(new String(data), ContextCompat.getColor(getContext(), R.color.javascript_environment));
-                }
-                else if(Objects.equals(source, "system")){
-                    terminalViewModel.appendData(new String(data), ContextCompat.getColor(getContext(), R.color.system_messages));
-                }
-                else if(Objects.equals(source, "user_input")){
-                    terminalViewModel.appendData(new String(data), ContextCompat.getColor(getContext(), R.color.user_input));
-                }
-            }
-        }
-        private void processBufferForStrings() {
-            int startIdx;
-            int endIdx;
 
-            while ((startIdx = buffer.indexOf("<STR>")) != -1 && (endIdx = buffer.indexOf("</STR>", startIdx)) != -1) {
-                String message = buffer.substring(startIdx + "<STR>".length(), endIdx);
-                terminalViewModel.appendData(message, ContextCompat.getColor(getContext(), R.color.serial_data)); // Append the complete message to the ViewModel
-                buffer.delete(0, endIdx + "</STR>".length()); // Remove processed message
-            }
-        }
-        private void displayAllData(byte[] data) {
-            String dataString = new String(data);
-            terminalViewModel.appendData(dataString, Color.GREEN);
-        }
-    };
-    public void appendConsoleText(String source, String data){
-        if(Objects.equals(source, "javascript")){
-            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.javascript_environment));
-        }
-        else if(Objects.equals(source, "system")){
-            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.system_messages));
-        }
-        else if(Objects.equals(source, "user_input")){
-            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.user_input));
-        }
-    }
+
 
     @Override
     public void onStop() {
-        //requireActivity().unregisterReceiver(usbDataReceiver); //don't call this to leave the broadcast of the USB data received active.
         super.onStop();
     }
     @Override

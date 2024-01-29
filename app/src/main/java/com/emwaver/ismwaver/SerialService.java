@@ -17,12 +17,14 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.emwaver.ismwaver.ui.console.ConsoleRepository;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
@@ -42,8 +44,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     public native void clearCommandBuffer();
     public native Object[] compressDataBits(int rangeStart, int rangeEnd, int numberBins);
     public native boolean getRecordingContinuous();
-    public native long [] findPulseEdges(int samplesPerSymbol, int errorTolerance, int maxLowPulseMultiplier);
-    public native long [] findHighPulses(int samplesPerSymbol, int errorTolerance);
     public native long [] findHighEdges(int samplesPerSymbol, int errorTolerance);
     public native byte [] extractBitsFromEdges(long [] edgeArray, int samplesPerSymbol);
     public native int getStatusNumber();
@@ -59,7 +59,7 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         }
     }
 
-    // default buffer is the dataBuffer
+    private ConsoleRepository repository = ConsoleRepository.getInstance();
 
 
     public void write(byte[] bytes){
@@ -73,10 +73,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         else{
             Toast.makeText(this, "No devices found", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    public void read(byte [] buf){
-
     }
 
     public void emptyReadBuffer() {
@@ -128,21 +124,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
             }else if (Constants.ACTION_INITIATE_USB_CONNECTION.equals(intent.getAction())) {
                 connectUSBSerial(); // Method to start USB connection process
 
-            }else if (Constants.ACTION_SEND_DATA_TO_SERVICE.equals(intent.getAction())) {
-                String userInput = intent.getStringExtra("userInput");
-                // Send the received data over USB.
-                Log.i("service", userInput);
-                assert userInput != null;
-                byte[] byteArray = userInput.getBytes();
-                try {
-                    if(byteArray != null && finalPort != null)
-                        finalPort.write(byteArray, 2000);
-                    else{
-                        Toast.makeText(context, "No devices found", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (IOException e) {
-                    Log.e("SerialService", "Error writing to port: ", e);
-                }
             }
         }
     };
@@ -155,8 +136,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     public void onNewData(byte[] data) {
         addToBuffer(data);
     }
-
-
 
     //Finds the port in which the USB device is connected to. Connects to the driver and returns the port.
     public void connectUSBSerial() {
@@ -213,7 +192,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         return port;
     }
 
-
     public void connectUSBFlash() {
         final int USB_VENDOR_ID = 1155;   // VID while in DFU mode 0x0483
         final int USB_PRODUCT_ID = 57105; // PID while in DFU mode 0xDF11
@@ -247,21 +225,17 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         }
     }
 
-    public void sendIntentToTerminal(byte[] data) {
-        Intent intent = new Intent(Constants.ACTION_USB_DATA_RECEIVED);
-        intent.putExtra("data", data);
-        intent.putExtra("source", "serial");
-        sendBroadcast(intent);
+    public void sendStringBytes(byte[] stringBytes) {
+        String message = new String(stringBytes, StandardCharsets.US_ASCII);
+        //Log.i("console", message);
+        repository.appendMessage(message);
+        Log.i("console", message);
     }
 
-    public void sendStringIntent(String string, String source){
-        Intent intent = new Intent(Constants.ACTION_USB_DATA_RECEIVED);
-        // Convert the message to bytes
-        byte[] messageBytes = string.getBytes();
 
-        intent.putExtra("data", messageBytes);
-        intent.putExtra("source", source); // Add this line; "system" is an example, replace with actual source
-        this.sendBroadcast(intent);
+    public void sendString(String string){
+        // Update the console data in the repository
+        repository.appendMessage(string);
     }
 
     public void changeStatus(String status) {
@@ -282,9 +256,6 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         registerReceiver(connectReceiver, filter);
         IntentFilter filterConnection = new IntentFilter(Constants.ACTION_INITIATE_USB_CONNECTION);
         registerReceiver(connectReceiver, filterConnection);
-
-        IntentFilter filterData = new IntentFilter(Constants.ACTION_SEND_DATA_TO_SERVICE);
-        registerReceiver(connectReceiver, filterData); // Receiver for the data inputted in console fragment and entered, to then be sent over USB.
     }
 
     @Override
