@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">ISM Waver</string>
-    <string name="title_home">Terminal</string>
-    <string name="title_dashboard">Packet Mode</string>
-    <string name="title_notifications">Flash</string>
     <string name="connect">connect</string>
     <string name="enter_command">Enter command...</string>
     <string name="clear">clear</string>
@@ -41,5 +38,10 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="device_status">Hold the flash button on the sub-1 and connect the device.\nOnce completed, grant permission to access de USB BOOTLOADER device.</string>
+    <string name="console">Console</string>
+    <string name="raw_mode">Raw Mode</string>
+    <string name="overview">Overview</string>
+    <string name="flash">Flash</string>
+    <string name="packet_mode">Packet Mode</string>
 
 </resources>

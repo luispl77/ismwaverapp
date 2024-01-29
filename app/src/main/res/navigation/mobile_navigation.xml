@@ -26,7 +26,7 @@
     <fragment
         android:id="@+id/navigation_packetmode"
         android:name="com.emwaver.ismwaver.ui.packetmode.PacketModeFragment"
-        android:label="@string/title_dashboard"
+        android:label="@string/packet_mode"
         tools:layout="@layout/fragment_packet_mode" />
 
     <fragment

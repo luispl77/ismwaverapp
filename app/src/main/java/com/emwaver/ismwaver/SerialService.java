@@ -313,4 +313,32 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     }
 
 
+    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
+        // Send the command
+        write(command);
+
+        long startTime = System.currentTimeMillis(); // Start time for timeout
+
+        // Wait for the response with timeout
+        while (getCommandBufferLength() < expectedResponseSize) {
+            if (System.currentTimeMillis() - startTime > timeoutMillis) {
+                return null; // Timeout occurred
+            }
+            try {
+                Thread.sleep(busyDelay); // Wait for it to arrive
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+
+        // Retrieve the response
+        byte[] response = new byte[expectedResponseSize];
+        response = pollData(expectedResponseSize);
+
+        clearCommandBuffer(); // Optionally clear the queue after processing (pollData() should already clear the response)
+        return response;
+    }
+
+
 }

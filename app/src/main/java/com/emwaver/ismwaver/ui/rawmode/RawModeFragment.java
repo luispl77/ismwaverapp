@@ -44,7 +44,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -82,6 +81,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             //updateChart(compressDataAndGetDataSet(0, serialService.getBufferLength(), 1000));
+            cc = new CC1101(serialService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -104,7 +104,7 @@ public class RawModeFragment extends Fragment implements CommandSender {
 
         chart = binding.chart;
 
-        CC1101 cc = new CC1101(this);
+
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 

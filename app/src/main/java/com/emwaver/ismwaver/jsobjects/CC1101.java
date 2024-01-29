@@ -3,11 +3,13 @@ package com.emwaver.ismwaver.jsobjects;
 import android.util.Log;
 
 import com.emwaver.ismwaver.CommandSender;
+import com.emwaver.ismwaver.SerialService;
 
 import java.util.Arrays;
 
 public class CC1101 {
-    private final CommandSender commandSender;
+
+    private final SerialService commandSender;
 
     // CC1101 Configuration Registers
     public static final byte CC1101_IOCFG2 = 0x00;       // GDO2 output pin configuration
@@ -114,8 +116,8 @@ public class CC1101 {
     public static final byte BYTES_IN_RXFIFO = 0x7F;            //byte number in RXfifo mask
 
 
-    public CC1101(CommandSender commandSender) {
-        this.commandSender = commandSender;
+    public CC1101(SerialService serialService) {
+        this.commandSender = serialService;
     }
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];

@@ -4,27 +4,27 @@
     <item
         android:id="@+id/navigation_console"
         android:icon="@drawable/ic_console_black_24dp"
-        android:title="Console" />
+        android:title="@string/console" />
 
     <item
         android:id="@+id/navigation_rawmode"
         android:icon="@drawable/ic_rawmode_black_24dp"
-        android:title="Raw Mode" />
+        android:title="@string/raw_mode" />
 
     <item
         android:id="@+id/navigation_overview"
         android:icon="@drawable/ic_overview_black_24dp"
-        android:title="Overview" />
+        android:title="@string/overview" />
 
     <item
         android:id="@+id/navigation_packetmode"
         android:icon="@drawable/ic_packetmode_black_24dp"
-        android:title="@string/title_dashboard" />
+        android:title="@string/packet_mode" />
 
     <item
         android:id="@+id/navigation_flash"
         android:icon="@drawable/ic_flash_black_24dp"
-        android:title="Flash" />
+        android:title="@string/flash" />
 
 
 

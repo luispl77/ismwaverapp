@@ -20,8 +20,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,15 +38,10 @@ import com.emwaver.ismwaver.SerialService;
 import com.emwaver.ismwaver.databinding.FragmentConsoleBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
 import com.emwaver.ismwaver.jsobjects.Console;
-import com.emwaver.ismwaver.jsobjects.Serial;
 import com.emwaver.ismwaver.jsobjects.Utils;
 
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -78,6 +71,7 @@ public class ConsoleFragment extends Fragment implements CommandSender {
             serialService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
+            cc1101 = new CC1101(serialService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -113,7 +107,7 @@ public class ConsoleFragment extends Fragment implements CommandSender {
 
         loadScriptFromAssets();
 
-        cc1101 = new CC1101(this);
+
 
         serial = new Serial(getContext(), this);
 
@@ -276,6 +270,17 @@ public class ConsoleFragment extends Fragment implements CommandSender {
             terminalViewModel.appendData(dataString, Color.GREEN);
         }
     };
+    public void appendConsoleText(String source, String data){
+        if(Objects.equals(source, "javascript")){
+            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.javascript_environment));
+        }
+        else if(Objects.equals(source, "system")){
+            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.system_messages));
+        }
+        else if(Objects.equals(source, "user_input")){
+            terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.user_input));
+        }
+    }
     @Override
     public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
         // Send the command

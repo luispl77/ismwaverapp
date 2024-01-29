@@ -41,6 +41,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             serialService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
+            cc = new CC1101(serialService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -54,7 +55,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
 
         packetModeViewModel = new ViewModelProvider(this).get(PacketModeViewModel.class);
 
-        cc = new CC1101(this);
+
 
         binding = FragmentPacketModeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();

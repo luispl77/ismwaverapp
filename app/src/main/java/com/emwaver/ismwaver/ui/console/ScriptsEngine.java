@@ -2,7 +2,6 @@ package com.emwaver.ismwaver.ui.console;
 
 import com.emwaver.ismwaver.jsobjects.CC1101;
 import com.emwaver.ismwaver.jsobjects.Console;
-import com.emwaver.ismwaver.jsobjects.Serial;
 import com.emwaver.ismwaver.jsobjects.Utils;
 
 import org.mozilla.javascript.Context;
