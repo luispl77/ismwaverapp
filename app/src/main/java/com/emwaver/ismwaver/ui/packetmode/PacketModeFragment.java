@@ -19,13 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.emwaver.ismwaver.CommandSender;
 import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.SerialService;
 import com.emwaver.ismwaver.databinding.FragmentPacketModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
 
-public class PacketModeFragment extends Fragment implements CommandSender {
+public class PacketModeFragment extends Fragment {
 
     private FragmentPacketModeBinding binding;
 
@@ -329,35 +328,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
         }
     }
 
-    @Override
-    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
-        // Send the command
-        if(isServiceBound){
-            serialService.write(command);
-        }
 
-        long startTime = System.currentTimeMillis(); // Start time for timeout
-
-        // Wait for the response with timeout
-        while (isServiceBound && serialService.getCommandBufferLength() < expectedResponseSize) {
-            if (System.currentTimeMillis() - startTime > timeoutMillis) {
-                return null; // Timeout occurred
-            }
-            try {
-                Thread.sleep(busyDelay); // Wait for it to arrive
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-        }
-
-        // Retrieve the response
-        byte[] response = new byte[expectedResponseSize];
-        response = serialService.pollData(expectedResponseSize);
-
-        serialService.clearCommandBuffer(); // Optionally clear the queue after processing (pollData() should already clear the response)
-        return response;
-    }
 
 
 }

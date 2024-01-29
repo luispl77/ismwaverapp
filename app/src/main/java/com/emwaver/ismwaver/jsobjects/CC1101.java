@@ -2,14 +2,13 @@ package com.emwaver.ismwaver.jsobjects;
 
 import android.util.Log;
 
-import com.emwaver.ismwaver.CommandSender;
 import com.emwaver.ismwaver.SerialService;
 
 import java.util.Arrays;
 
 public class CC1101 {
 
-    private final SerialService commandSender;
+    private final SerialService serialService;
 
     // CC1101 Configuration Registers
     public static final byte CC1101_IOCFG2 = 0x00;       // GDO2 output pin configuration
@@ -117,14 +116,14 @@ public class CC1101 {
 
 
     public CC1101(SerialService serialService) {
-        this.commandSender = serialService;
+        this.serialService = serialService;
     }
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];
         byte[] response;
         command[0] = '%'; // command strobe character
         command[1] = commandStrobe;
-        response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("spiStrobe", Arrays.toString(response));  //response is the status byte
     }
     public void writeBurstReg(byte addr, byte[] data, byte len){
@@ -134,7 +133,7 @@ public class CC1101 {
         command[1] = addr; //burst write >[addr][len][data]
         command[2] = len;
         System.arraycopy(data, 0, command, 3, data.length); // Efficient array copy
-        response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("writeBurstReg", toHexStringWithHexPrefix(response)); //response is the status byte
     }
     public byte [] readBurstReg(byte addr, int len){
@@ -143,7 +142,7 @@ public class CC1101 {
         command[0] = '<'; //read burst reg character
         command[1] = addr; ////burst read <[addr][len]
         command[2] = (byte)len;
-        response = commandSender.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
+        response = serialService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
         Log.i("readBurstReg", toHexStringWithHexPrefix(response));
         return response;
     }
@@ -152,7 +151,7 @@ public class CC1101 {
         byte [] response = new byte[1];
         command[0] = '?'; //read reg character
         command[1] = addr; //single read ?[addr]
-        response = commandSender.sendCommandAndGetResponse(command, (byte)1, 1, 1000);
+        response = serialService.sendCommandAndGetResponse(command, (byte)1, 1, 1000);
         Log.i("readReg", toHexStringWithHexPrefix(response));
         return response[0];
     }
@@ -162,7 +161,7 @@ public class CC1101 {
         command[0] = '!'; //write reg character
         command[1] = addr; //single write ![addr][data]
         command[2] = data;
-        response = commandSender.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
         Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
     }
     public void sendData(byte [] txBuffer, int size, int t) {
@@ -197,7 +196,7 @@ public class CC1101 {
         byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Transmit init done\n";
         int length = responseString.length();
-        byte[] response = commandSender.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -206,7 +205,7 @@ public class CC1101 {
         byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Receive init done\n";
         int length = responseString.length();
-        byte[] response = commandSender.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -215,7 +214,7 @@ public class CC1101 {
         byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
         String responseString = "<STR>Continuous mode 433/Rx values init done\n</STR>";
         int length = responseString.length();
-        byte[] response = commandSender.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -414,7 +413,7 @@ public class CC1101 {
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
         int expectedLength = 4; // Expected length of the response; adjust as needed
-        byte[] response = commandSender.sendCommandAndGetResponse(command, expectedLength, 1, 1000);
+        byte[] response = serialService.sendCommandAndGetResponse(command, expectedLength, 1, 1000);
 
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));

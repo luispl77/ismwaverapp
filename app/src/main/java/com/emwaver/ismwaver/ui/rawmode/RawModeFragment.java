@@ -24,7 +24,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.emwaver.ismwaver.CommandSender;
 import com.emwaver.ismwaver.Constants;
 import com.emwaver.ismwaver.SerialService;
 import com.emwaver.ismwaver.databinding.FragmentRawModeBinding;
@@ -50,7 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class RawModeFragment extends Fragment implements CommandSender {
+public class RawModeFragment extends Fragment {
 
     private RawModeViewModel rawModeViewModel;
     private FragmentRawModeBinding binding;
@@ -654,35 +653,5 @@ public class RawModeFragment extends Fragment implements CommandSender {
         } catch (IOException e) {
             Log.e("filesys", "Error writing to file", e);
         }
-    }
-
-    @Override
-    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
-        // Send the command
-        if(isServiceBound){
-            serialService.write(command);
-        }
-
-        long startTime = System.currentTimeMillis(); // Start time for timeout
-
-        // Wait for the response with timeout
-        while (isServiceBound && serialService.getCommandBufferLength() < expectedResponseSize) {
-            if (System.currentTimeMillis() - startTime > timeoutMillis) {
-                return null; // Timeout occurred
-            }
-            try {
-                Thread.sleep(busyDelay); // Wait for it to arrive
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-        }
-
-        // Retrieve the response
-        byte[] response = new byte[expectedResponseSize];
-        response = serialService.pollData(expectedResponseSize);
-
-        serialService.clearCommandBuffer(); // Optionally clear the queue after processing (pollData() should already clear the response)
-        return response;
     }
 }

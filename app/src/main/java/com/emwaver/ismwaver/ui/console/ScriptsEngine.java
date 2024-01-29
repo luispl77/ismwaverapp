@@ -31,7 +31,6 @@ public class ScriptsEngine{
 
     private CC1101 cc1101;
 
-    private Serial serial;
 
     private Console console;
 
@@ -40,9 +39,8 @@ public class ScriptsEngine{
 
     private static final String SCRIPT = "function evaluate(arithmetic){ return eval(arithmetic); }";
 
-    public ScriptsEngine(CC1101 cc1101, Serial serial, Console console, Utils utils) {
+    public ScriptsEngine(CC1101 cc1101, Console console, Utils utils) {
         this.cc1101 = cc1101;
-        this.serial = serial;
         this.console = console;
         this.utils = utils;
     }
@@ -58,7 +56,6 @@ public class ScriptsEngine{
 
             // Make entire CC1101, Serial, and Console classes accessible from javascript
             ScriptableObject.putProperty(scope, "CC1101", Context.javaToJS(cc1101, scope));
-            ScriptableObject.putProperty(scope, "Serial", Context.javaToJS(serial, scope));
             ScriptableObject.putProperty(scope, "Console", Context.javaToJS(console, scope));
             ScriptableObject.putProperty(scope, "Utils", Context.javaToJS(utils, scope));
 

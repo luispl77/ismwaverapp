@@ -31,7 +31,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.emwaver.ismwaver.CommandSender;
 import com.emwaver.ismwaver.Constants;
 import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.SerialService;
@@ -49,14 +48,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 
-public class ConsoleFragment extends Fragment implements CommandSender {
+public class ConsoleFragment extends Fragment {
     private FragmentConsoleBinding binding;
     private EditText terminalTextInput;
     private TextView terminalText;
     private ConsoleViewModel terminalViewModel;
     private boolean filterEnabled = true;
     private CC1101 cc1101;
-    private Serial serial;
     private Console console;
     private Utils utils;
     private SerialService serialService;
@@ -109,7 +107,6 @@ public class ConsoleFragment extends Fragment implements CommandSender {
 
 
 
-        serial = new Serial(getContext(), this);
 
         console = new Console(getContext());
 
@@ -136,7 +133,7 @@ public class ConsoleFragment extends Fragment implements CommandSender {
                 new Thread(() -> {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
-                        ScriptsEngine scriptsEngine = new ScriptsEngine(cc1101, serial, console, utils);
+                        ScriptsEngine scriptsEngine = new ScriptsEngine(cc1101, console, utils);
                         serialService.changeStatus("Running script...");
                         String result = scriptsEngine.executeJavaScript(jsCode);
                         serialService.sendStringIntent("\n>", "user_input");
@@ -281,35 +278,7 @@ public class ConsoleFragment extends Fragment implements CommandSender {
             terminalViewModel.appendData(data, ContextCompat.getColor(getContext(), R.color.user_input));
         }
     }
-    @Override
-    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
-        // Send the command
-        if(isServiceBound){
-            serialService.write(command);
-        }
 
-        long startTime = System.currentTimeMillis(); // Start time for timeout
-
-        // Wait for the response with timeout
-        while (isServiceBound && serialService.getCommandBufferLength() < expectedResponseSize) {
-            if (System.currentTimeMillis() - startTime > timeoutMillis) {
-                return null; // Timeout occurred
-            }
-            try {
-                Thread.sleep(busyDelay); // Wait for it to arrive
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
-        }
-
-        // Retrieve the response
-        byte[] response = new byte[expectedResponseSize];
-        response = serialService.pollData(expectedResponseSize);
-
-        serialService.clearCommandBuffer(); // Optionally clear the queue after processing
-        return response;
-    }
     @Override
     public void onStop() {
         //requireActivity().unregisterReceiver(usbDataReceiver); //don't call this to leave the broadcast of the USB data received active.
