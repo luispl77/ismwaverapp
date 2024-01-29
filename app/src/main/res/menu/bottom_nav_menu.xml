@@ -17,14 +17,16 @@
         android:title="Overview" />
 
     <item
-        android:id="@+id/navigation_analysis"
-        android:icon="@drawable/ic_analysis_black_24dp"
-        android:title="Analysis" />
-
-    <item
         android:id="@+id/navigation_packetmode"
         android:icon="@drawable/ic_packetmode_black_24dp"
         android:title="@string/title_dashboard" />
+
+    <item
+        android:id="@+id/navigation_flash"
+        android:icon="@drawable/ic_flash_black_24dp"
+        android:title="Flash" />
+
+
 
 
 

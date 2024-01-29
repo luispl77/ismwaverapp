@@ -367,7 +367,7 @@ public class ConsoleFragment extends Fragment implements CommandSender {
     private void loadScriptFromAssets() {
         try {
             // Open an input stream to read from the assets folder
-            InputStream is = getActivity().getAssets().open("script_receive_tesla.js");
+            InputStream is = getActivity().getAssets().open(".js");
             int size = is.available();
 
             // Read the entire script into a byte array

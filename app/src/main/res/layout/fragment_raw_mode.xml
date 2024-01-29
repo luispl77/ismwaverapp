@@ -54,7 +54,6 @@
         android:id="@+id/retransmitButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
         android:text="retransmit"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -63,7 +62,7 @@
         android:id="@+id/clearBufferButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
+
         android:text="clear buf"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/retransmitButton" />
@@ -71,12 +70,107 @@
 
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/chart"
-        android:layout_width="411dp"
-        android:layout_height="400dp"
-        app:layout_constraintBottom_toTopOf="@+id/bufferReadingText"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/reconstructedSinalEditText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/connectButton" />
+
+    <EditText
+        android:id="@+id/reconstructedSinalEditText"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:background="#EEE"
+        android:gravity="top|start"
+        android:hint="Reconstructed sinal..."
+        android:inputType="textMultiLine"
+        android:padding="8dp"
+        android:scrollbars="vertical"
+        android:textColor="#000"
+        app:layout_constraintBottom_toTopOf="@+id/fillTeslaButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <EditText
+        android:id="@+id/samplesPerSymbolEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="samples per bit..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:text="40"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/reconstructedSinalEditText" />
+
+    <EditText
+        android:id="@+id/errorToleranceEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="error tolerance..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:text="10"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
+
+    <EditText
+        android:id="@+id/numberPointsEditText"
+        android:layout_width="120dp"
+        android:layout_height="48dp"
+        android:hint="number of points..."
+        android:imeOptions="actionDone"
+        android:inputType="number"
+        android:padding="8dp"
+        android:text="500"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/errorToleranceEditText" />
+
+
+    <Button
+        android:id="@+id/fillTeslaButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="fill"
+        app:layout_constraintBottom_toTopOf="@+id/reconstructButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/reconstructButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="reconstruct"
+        app:layout_constraintBottom_toTopOf="@+id/saveFileAsButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/saveFileButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="save"
+        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
+        app:layout_constraintStart_toEndOf="@+id/saveFileAsButton" />
+
+    <Button
+        android:id="@+id/saveFileAsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="save as"
+        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/openFileButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="open"
+        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
+        app:layout_constraintStart_toEndOf="@+id/saveFileButton" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
