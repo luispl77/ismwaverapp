@@ -4,20 +4,18 @@
 
 
 
-bool isRecordingContinuous = false;
 
-enum Mode {
-    TRANSMIT,
-    RECEIVE,
-    TERMINAL
-};
-
-Mode currentMode = TERMINAL;  // Default mode
 std::vector<char> dataBuffer;
 std::vector<char> commandBuffer;
+std::vector<char>* g_currentBufferPtr = &commandBuffer;
+
+bool directComms = true;
+
 
 
 extern "C" {
+
+
 
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getDataBuffer(JNIEnv *env, jobject) {
     if (dataBuffer.empty()) {
@@ -42,13 +40,21 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_loadDataBuffer(JNIEn
 
     env->ReleaseByteArrayElements(data, dataBytes, 0);
 }
-JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_USBService_getRecordingContinuous(JNIEnv *env, jobject) {
-    return currentMode == RECEIVE;
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setDirectComms(JNIEnv *env, jobject, jboolean direct) {
+    directComms = direct;
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setMode(JNIEnv *env, jobject, jint mode) {
-    currentMode = Mode(mode);
+JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_USBService_getDirectComms(JNIEnv *env, jobject) {
+    return directComms;
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_sendIntentToTerminalNative(JNIEnv *env, jobject javaService, jbyteArray data) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setBuffer(JNIEnv *env, jobject, jboolean data_buffer) {
+    if(data_buffer){
+        g_currentBufferPtr = &dataBuffer;
+    }
+    else{
+        g_currentBufferPtr = &commandBuffer;
+    }
+}
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_printStringConsoleNative(JNIEnv *env, jobject javaService, jbyteArray data) {
     jclass serviceClass = env->GetObjectClass(javaService);
     jmethodID sendIntentMethod = env->GetMethodID(serviceClass, "printStringBytes", "([B)V");
 
@@ -58,12 +64,11 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_addToBuffer(JNIEnv *
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
 
-    std::vector<char>& targetBuffer = (currentMode == RECEIVE) ? dataBuffer : commandBuffer;
-    targetBuffer.insert(targetBuffer.end(), bufferPtr, bufferPtr + lengthOfArray);
+    g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 
-    if (currentMode == TERMINAL) {
-        Java_com_emwaver_ismwaver_USBService_sendIntentToTerminalNative(env, serialService, data);
+    if (g_currentBufferPtr == &commandBuffer && directComms) {
+        Java_com_emwaver_ismwaver_USBService_printStringConsoleNative(env, serialService, data);
     }
 }
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getCommandBufferLength(JNIEnv *env, jobject) {

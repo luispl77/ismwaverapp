@@ -124,7 +124,7 @@ public class RawModeFragment extends Fragment {
 
         binding.retransmitButton.setOnClickListener(v -> {
             int bufferLength = USBService.getDataBufferLength();
-            USBService.setMode(0); //transmit
+            USBService.setBuffer(Constants.COMMAND_BUFFER); //transmit
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
             transmitBuffer();
@@ -140,7 +140,7 @@ public class RawModeFragment extends Fragment {
         binding.startRecordingButton.setOnClickListener(v -> {
             String contCommand = "raw";
             byte[] byteArray = contCommand.getBytes();
-            USBService.setMode(Constants.RECEIVE);
+            USBService.setBuffer(Constants.DATA_BUFFER);
             USBService.write(byteArray);
 
             scheduler = Executors.newSingleThreadScheduledExecutor();
@@ -154,7 +154,7 @@ public class RawModeFragment extends Fragment {
             USBService.write(byteArray);
             new Thread(() -> {
                 USBService.emptyReadBuffer(); //this function busy waits
-                USBService.setMode(Constants.TERMINAL); //wait before the buffer is empty
+                USBService.setBuffer(Constants.COMMAND_BUFFER); //wait before the buffer is empty
             }).start();
 
             chartMaxX = USBService.getDataBufferLength()*8;
@@ -177,9 +177,9 @@ public class RawModeFragment extends Fragment {
         });
 
         binding.fillTeslaButton.setOnClickListener(v -> {
-            USBService.setMode(Constants.RECEIVE);
+            USBService.setBuffer(Constants.DATA_BUFFER);
             fillBufferWithTesla(0.001);
-            USBService.setMode(Constants.TERMINAL);
+            USBService.setBuffer(Constants.COMMAND_BUFFER);
             refreshChart();
         });
 
@@ -553,15 +553,7 @@ public class RawModeFragment extends Fragment {
     }
 
 
-    private void unbindServiceIfNeeded() {
-        if (isServiceBound && !isFragmentActive() && getActivity() != null) {
-            getActivity().unbindService(serviceConnection);
-            isServiceBound = false;
-        }
-    }
-    private boolean isFragmentActive() {
-        return isAdded() && !isDetached() && !isRemoving();
-    }
+
     public void showToastOnUiThread(final String message) {
         if (isAdded()) { // Check if Fragment is currently added to its activity
             getActivity().runOnUiThread(() ->
@@ -645,6 +637,7 @@ public class RawModeFragment extends Fragment {
     private void writeChangesToFile() {
         if (currentFileUri == null) {
             Log.e("filesys", "No file is currently open");
+            showToastOnUiThread("No file open");
             return;
         }
 

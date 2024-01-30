@@ -39,15 +39,16 @@ public class USBService extends Service implements SerialInputOutputManager.List
     public native void addToBuffer(byte[] data);
     public native int getDataBufferLength();
     public native int getCommandBufferLength();
+    public native void setDirectComms(boolean direct);
+    public native boolean getDirectComms();
     public native byte[] pollData(int length);
     public native void clearDataBuffer();
     public native void clearCommandBuffer();
     public native Object[] compressDataBits(int rangeStart, int rangeEnd, int numberBins);
-    public native boolean getRecordingContinuous();
     public native long [] findHighEdges(int samplesPerSymbol, int errorTolerance);
     public native byte [] extractBitsFromEdges(long [] edgeArray, int samplesPerSymbol);
     public native int getStatusNumber();
-    public native void setMode(int mode);
+    public native void setBuffer(boolean data_buffer);
     public native byte[] getBufferRange(int start, int end);
     public native byte[] getDataBuffer();
     public native void loadDataBuffer(byte[] data);

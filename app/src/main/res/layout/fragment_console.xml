@@ -98,11 +98,11 @@
         app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
 
     <CheckBox
-        android:id="@+id/filterCheckBox"
+        android:id="@+id/directCommsCheckBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:checked="true"
-        android:text="filter"
+        android:text="direct"
         app:layout_constraintStart_toEndOf="@+id/executeScriptButton"
         app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
 

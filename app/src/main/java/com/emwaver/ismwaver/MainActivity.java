@@ -20,8 +20,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
 
-    private ConsoleViewModel terminalViewModel = null;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        IntentFilter filter = new IntentFilter("com.example.UPDATE_STATUS");
+        IntentFilter filter = new IntentFilter(Constants.ACTION_UPDATE_STATUS);
         registerReceiver(statusReceiver, filter);
     }
 

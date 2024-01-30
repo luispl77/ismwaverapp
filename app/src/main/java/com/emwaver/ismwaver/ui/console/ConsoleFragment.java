@@ -44,7 +44,7 @@ public class ConsoleFragment extends Fragment {
     private EditText terminalTextInput;
     private TextView consoleText;
     private ConsoleViewModel consoleViewModel;
-    private boolean filterEnabled = true;
+    private boolean directComms = true;
     private CC1101 cc;
     private Console console;
     private Utils utils;
@@ -61,6 +61,9 @@ public class ConsoleFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
+            binding.directCommsCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                USBService.setDirectComms(isChecked);
+            });
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -130,16 +133,15 @@ public class ConsoleFragment extends Fragment {
         terminalTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
-                USBService.write(userInput.getBytes()); // Send to USBService for transmitting over USB
+                if(USBService.getDirectComms())
+                    USBService.write(userInput.getBytes()); // Send to USBService for transmitting over USB
                 consoleViewModel.appendData(userInput+"\n>");
                 terminalTextInput.setText("");
             }
             return false;
         });
 
-        binding.filterCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            filterEnabled = isChecked;
-        });
+
 
         binding.connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
