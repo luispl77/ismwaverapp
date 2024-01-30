@@ -25,9 +25,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
-import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentRawModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
+import com.emwaver.ismwaver.jsobjects.Utils;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
@@ -53,7 +54,7 @@ public class RawModeFragment extends Fragment {
 
     private RawModeViewModel rawModeViewModel;
     private FragmentRawModeBinding binding;
-    private SerialService serialService;
+    private USBService USBService;
     LineChart chart = null;
     private int chartMinX = 0;
     private int chartMaxX = 10000;
@@ -75,12 +76,12 @@ public class RawModeFragment extends Fragment {
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            SerialService.LocalBinder binder = (SerialService.LocalBinder) service;
-            serialService = binder.getService();
+            USBService.LocalBinder binder = (USBService.LocalBinder) service;
+            USBService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            //updateChart(compressDataAndGetDataSet(0, serialService.getBufferLength(), 1000));
-            cc = new CC1101(serialService);
+            //updateChart(compressDataAndGetDataSet(0, USBService.getBufferLength(), 1000));
+            cc = new CC1101(USBService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -108,7 +109,7 @@ public class RawModeFragment extends Fragment {
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 
         binding.connectButton.setOnClickListener(v -> {
-            serialService.connectUSBSerial();
+            USBService.connectUSBSerial();
             //updateVisibleRange();
         });
         binding.initContinuousButton.setOnClickListener(new View.OnClickListener() {
@@ -122,8 +123,8 @@ public class RawModeFragment extends Fragment {
         });
 
         binding.retransmitButton.setOnClickListener(v -> {
-            int bufferLength = serialService.getDataBufferLength();
-            serialService.setMode(0); //transmit
+            int bufferLength = USBService.getDataBufferLength();
+            USBService.setMode(0); //transmit
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
             transmitBuffer();
@@ -131,7 +132,7 @@ public class RawModeFragment extends Fragment {
         });
 
         binding.clearBufferButton.setOnClickListener(v -> {
-            serialService.clearDataBuffer();
+            USBService.clearDataBuffer();
             Toast.makeText(getContext(), "buffer cleared" , Toast.LENGTH_SHORT).show();
             updateChart(compressDataAndGetDataSet(rawModeViewModel.getVisibleRangeStart(), rawModeViewModel.getVisibleRangeEnd(), 1000));
         });
@@ -139,8 +140,8 @@ public class RawModeFragment extends Fragment {
         binding.startRecordingButton.setOnClickListener(v -> {
             String contCommand = "raw";
             byte[] byteArray = contCommand.getBytes();
-            serialService.setMode(Constants.RECEIVE);
-            serialService.write(byteArray);
+            USBService.setMode(Constants.RECEIVE);
+            USBService.write(byteArray);
 
             scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
@@ -150,13 +151,13 @@ public class RawModeFragment extends Fragment {
         binding.stopRecordingButton.setOnClickListener(v -> {
             String contCommand = "ssss";
             byte[] byteArray = contCommand.getBytes();
-            serialService.write(byteArray);
+            USBService.write(byteArray);
             new Thread(() -> {
-                serialService.emptyReadBuffer(); //this function busy waits
-                serialService.setMode(Constants.TERMINAL); //wait before the buffer is empty
+                USBService.emptyReadBuffer(); //this function busy waits
+                USBService.setMode(Constants.TERMINAL); //wait before the buffer is empty
             }).start();
 
-            chartMaxX = serialService.getDataBufferLength()*8;
+            chartMaxX = USBService.getDataBufferLength()*8;
             XAxis xAxis = chart.getXAxis();
             xAxis.setAxisMinimum(chartMinX); // Start at 0 microseconds
             xAxis.setAxisMaximum(chartMaxX);
@@ -169,16 +170,16 @@ public class RawModeFragment extends Fragment {
         });
 
         binding.reconstructButton.setOnClickListener(v -> {
-            toggleVerticalLinesOnChart(serialService.findHighEdges(samplesPerSymbol, errorTolerance));
-            byte [] reconstructedSignal = serialService.extractBitsFromEdges(serialService.findHighEdges(samplesPerSymbol, errorTolerance), samplesPerSymbol);
+            toggleVerticalLinesOnChart(USBService.findHighEdges(samplesPerSymbol, errorTolerance));
+            byte [] reconstructedSignal = USBService.extractBitsFromEdges(USBService.findHighEdges(samplesPerSymbol, errorTolerance), samplesPerSymbol);
             logBuffer(reconstructedSignal);
-            binding.reconstructedSinalEditText.setText(CC1101.bytesToHexString(reconstructedSignal));
+            binding.reconstructedSinalEditText.setText(Utils.bytesToHexString(reconstructedSignal));
         });
 
         binding.fillTeslaButton.setOnClickListener(v -> {
-            serialService.setMode(Constants.RECEIVE);
+            USBService.setMode(Constants.RECEIVE);
             fillBufferWithTesla(0.001);
-            serialService.setMode(Constants.TERMINAL);
+            USBService.setMode(Constants.TERMINAL);
             refreshChart();
         });
 
@@ -382,8 +383,8 @@ public class RawModeFragment extends Fragment {
         //logBuffer(dataBuffer);
         Log.i("dataBuffer", "size: "+dataBuffer.length);
         addNoiseToSignal(dataBuffer, noise);
-        serialService.addToBuffer(dataBuffer);
-        Log.i("data buflen", "size: "+serialService.getDataBufferLength());
+        USBService.addToBuffer(dataBuffer);
+        Log.i("data buflen", "size: "+ USBService.getDataBufferLength());
 
     }
     private void addNoiseToSignal(byte[] dataBuffer, double noiseProbability) {
@@ -397,7 +398,7 @@ public class RawModeFragment extends Fragment {
         }
     }
     private void transmitBuffer() {
-        int nativeBufferSize = serialService.getDataBufferLength(); // Existing JNI method to get the native buffer size
+        int nativeBufferSize = USBService.getDataBufferLength(); // Existing JNI method to get the native buffer size
         sendStartTransmissionCommand(nativeBufferSize);
 
         try {
@@ -413,33 +414,33 @@ public class RawModeFragment extends Fragment {
 
         for (int i = 0; i < nativeBufferSize; i += packetSize) {
             int end = Math.min(i + packetSize, nativeBufferSize);
-            byte[] packet = serialService.getBufferRange(i, end); // Native method to get a range of the buffer
+            byte[] packet = USBService.getBufferRange(i, end); // Native method to get a range of the buffer
 
             startTime += period;
             int bufferStatus = getLogStatus();
             if (bufferStatus > 200 && bufferStatus < 300) {
-                serialService.write(packet);
+                USBService.write(packet);
             } else if(bufferStatus > 300){
-                serialService.write(packet);
+                USBService.write(packet);
                 startTime += flow_time_delta; //write slower than the processing speed
             }
             else if(bufferStatus < 300){
-                serialService.write(packet);
+                USBService.write(packet);
                 startTime -= flow_time_delta; //write faster than the processing speed
             }
             while (System.nanoTime() < startTime) {
                 // Busy wait
             }
         }
-        serialService.clearCommandBuffer();
+        USBService.clearCommandBuffer();
     }
     private int getLogStatus(){
-        int bufferStatus = serialService.getStatusNumber(); // Get buffer status from STM32
+        int bufferStatus = USBService.getStatusNumber(); // Get buffer status from STM32
         if(bufferStatus == -1){
-            Log.i("bufstatus", "not found" + "   buflen: " + serialService.getCommandBufferLength());
+            Log.i("bufstatus", "not found" + "   buflen: " + USBService.getCommandBufferLength());
         }
         else{
-            Log.i("bufstatus", "" + bufferStatus  + "   buflen: " + serialService.getCommandBufferLength());
+            Log.i("bufstatus", "" + bufferStatus  + "   buflen: " + USBService.getCommandBufferLength());
         }
         return bufferStatus;
     }
@@ -448,7 +449,7 @@ public class RawModeFragment extends Fragment {
         String contCommand = "tran";
         byte[] commandBytes = contCommand.getBytes();
         // Send the byte array over the serial connection
-        serialService.write(commandBytes);
+        USBService.write(commandBytes);
     }
     private void logBuffer(byte[] buffer) {
         StringBuilder sb = new StringBuilder();
@@ -495,7 +496,7 @@ public class RawModeFragment extends Fragment {
         rawModeViewModel.setVisibleRangeStart((int) chart.getLowestVisibleX());
         rawModeViewModel.setVisibleRangeEnd((int) chart.getHighestVisibleX());
 
-        chartMaxX = serialService.getDataBufferLength()*8;
+        chartMaxX = USBService.getDataBufferLength()*8;
         XAxis xAxis = chart.getXAxis();
         xAxis.setAxisMinimum(chartMinX);
         xAxis.setAxisMaximum(chartMaxX);
@@ -505,7 +506,7 @@ public class RawModeFragment extends Fragment {
 
     private LineDataSet compressDataAndGetDataSet(int rangeStart, int rangeEnd, int numberBins) {
         // Call the native method
-        Object[] result = (Object[]) serialService.compressDataBits(rangeStart, rangeEnd, numberBins);
+        Object[] result = (Object[]) USBService.compressDataBits(rangeStart, rangeEnd, numberBins);
 
         float[] timeValues = (float[]) result[0];
         float[] dataValues = (float[]) result[1];
@@ -571,7 +572,7 @@ public class RawModeFragment extends Fragment {
     public void onStart() {
         super.onStart();
         if (!isServiceBound && getActivity() != null) {
-            Intent intent = new Intent(getActivity(), SerialService.class);
+            Intent intent = new Intent(getActivity(), USBService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }
@@ -611,7 +612,7 @@ public class RawModeFragment extends Fragment {
 
     private void saveFileToUri(Uri uri) {
         try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(uri)) {
-            outstream.write(serialService.getDataBuffer());
+            outstream.write(USBService.getDataBuffer());
         } catch (IOException e) {
             Log.e("filesys", "Error writing to file", e);
         }
@@ -621,7 +622,7 @@ public class RawModeFragment extends Fragment {
         try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
             byte[] fileData = readBytes(instream);
             // Now send this data to your native code to populate dataBuffer
-            serialService.loadDataBuffer(fileData);
+            USBService.loadDataBuffer(fileData);
             refreshChart();
         } catch (IOException e) {
             Log.e("filesys", "Error reading from file", e);
@@ -648,7 +649,7 @@ public class RawModeFragment extends Fragment {
         }
 
         try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(currentFileUri)) {
-            byte[] dataBuffer = serialService.getDataBuffer(); // Get the updated data
+            byte[] dataBuffer = USBService.getDataBuffer(); // Get the updated data
             outstream.write(dataBuffer);
         } catch (IOException e) {
             Log.e("filesys", "Error writing to file", e);

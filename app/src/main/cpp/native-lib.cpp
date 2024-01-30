@@ -19,7 +19,7 @@ std::vector<char> commandBuffer;
 
 extern "C" {
 
-JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getDataBuffer(JNIEnv *env, jobject) {
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getDataBuffer(JNIEnv *env, jobject) {
     if (dataBuffer.empty()) {
         return nullptr;
     }
@@ -28,7 +28,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getDataBuff
     env->SetByteArrayRegion(javaArray, 0, dataBuffer.size(), reinterpret_cast<const jbyte*>(dataBuffer.data()));
     return javaArray;
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_loadDataBuffer(JNIEnv *env, jobject, jbyteArray data) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_loadDataBuffer(JNIEnv *env, jobject, jbyteArray data) {
     jsize dataSize = env->GetArrayLength(data);
     jbyte* dataBytes = env->GetByteArrayElements(data, 0);
 
@@ -42,19 +42,19 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_loadDataBuffer(JN
 
     env->ReleaseByteArrayElements(data, dataBytes, 0);
 }
-JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_SerialService_getRecordingContinuous(JNIEnv *env, jobject) {
+JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_USBService_getRecordingContinuous(JNIEnv *env, jobject) {
     return currentMode == RECEIVE;
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_setMode(JNIEnv *env, jobject, jint mode) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setMode(JNIEnv *env, jobject, jint mode) {
     currentMode = Mode(mode);
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(JNIEnv *env, jobject javaService, jbyteArray data) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_sendIntentToTerminalNative(JNIEnv *env, jobject javaService, jbyteArray data) {
     jclass serviceClass = env->GetObjectClass(javaService);
-    jmethodID sendIntentMethod = env->GetMethodID(serviceClass, "sendStringBytes", "([B)V");
+    jmethodID sendIntentMethod = env->GetMethodID(serviceClass, "printStringBytes", "([B)V");
 
     env->CallVoidMethod(javaService, sendIntentMethod, data);
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
 
@@ -63,22 +63,22 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_addToBuffer(JNIEn
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 
     if (currentMode == TERMINAL) {
-        Java_com_emwaver_ismwaver_SerialService_sendIntentToTerminalNative(env, serialService, data);
+        Java_com_emwaver_ismwaver_USBService_sendIntentToTerminalNative(env, serialService, data);
     }
 }
-JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getCommandBufferLength(JNIEnv *env, jobject) {
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getCommandBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(commandBuffer.size());
 }
-JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getDataBufferLength(JNIEnv *env, jobject) {
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getDataBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(dataBuffer.size());
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearDataBuffer(JNIEnv *env, jobject) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_clearDataBuffer(JNIEnv *env, jobject) {
     dataBuffer.clear();
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_SerialService_clearCommandBuffer(JNIEnv *env, jobject) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_clearCommandBuffer(JNIEnv *env, jobject) {
     commandBuffer.clear();
 }
-JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JNIEnv *env, jobject, jint length) {
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_pollData(JNIEnv *env, jobject, jint length) {
     int lenToPoll = std::min(static_cast<int>(commandBuffer.size()), length);
     jbyteArray returnArray = env->NewByteArray(lenToPoll);
 
@@ -96,7 +96,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_pollData(JN
 
 return returnArray;
 }
-JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
     int lenToCopy = end - start;
     if (lenToCopy <= 0 || start < 0 || start >= dataBuffer.size() || end > dataBuffer.size()) {
         return env->NewByteArray(0); // Return an empty array if parameters are invalid
@@ -106,7 +106,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_getBufferRa
     env->SetByteArrayRegion(returnArray, 0, lenToCopy, reinterpret_cast<const jbyte*>(&dataBuffer[start]));
     return returnArray;
 }
-JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(JNIEnv *env, jobject) {
+JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getStatusNumber(JNIEnv *env, jobject) {
     const std::string HEADER = "BS";
     const size_t HEADER_SIZE = HEADER.size();
     const size_t STATUS_SIZE = 2; // Assuming status number is 2 bytes
@@ -129,7 +129,7 @@ JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_SerialService_getStatusNumber(J
     return -1;
 }
 //Line graph compression
-JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
+JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_USBService_compressDataBits(JNIEnv *env, jobject, jint rangeStart, jint rangeEnd, jint numberBins) {
 
     float timePerSample = 1.0f; // todo: fix scale to have 10us per sample
     float totalPointsInRange = (rangeEnd - rangeStart)/timePerSample;
@@ -198,7 +198,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_emwaver_ismwaver_SerialService_compressD
     return result;
 }
 //Analysis
-JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findHighEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance) {
+JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_USBService_findHighEdges(JNIEnv *env, jobject, jint samplesPerSymbol, jint errorTolerance) {
     std::vector<jlong> edges;
     bool isHigh = false;
     jlong startOfPulse = 0;
@@ -261,7 +261,7 @@ JNIEXPORT jlongArray JNICALL Java_com_emwaver_ismwaver_SerialService_findHighEdg
 
     return result;
 }
-JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_SerialService_extractBitsFromEdges(JNIEnv *env, jobject, jlongArray edgeArray, jint samplesPerSymbol) {
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_extractBitsFromEdges(JNIEnv *env, jobject, jlongArray edgeArray, jint samplesPerSymbol) {
     jsize edgeCount = env->GetArrayLength(edgeArray);
     jlong *edges = env->GetLongArrayElements(edgeArray, NULL);
 

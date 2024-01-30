@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.emwaver.ismwaver.jsobjects.Console;
 import com.emwaver.ismwaver.ui.console.ConsoleRepository;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -28,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
-public class SerialService extends Service implements SerialInputOutputManager.Listener {
+public class USBService extends Service implements SerialInputOutputManager.Listener {
 
     static {
         System.loadLibrary("native-lib");
@@ -53,9 +54,9 @@ public class SerialService extends Service implements SerialInputOutputManager.L
     public native void loadDataBuffer(byte[] data);
 
     public class LocalBinder extends Binder {
-        public SerialService getService() {
-            // Return this instance of SerialService so clients can call public methods
-            return SerialService.this;
+        public USBService getService() {
+            // Return this instance of USBService so clients can call public methods
+            return USBService.this;
         }
     }
 
@@ -67,7 +68,7 @@ public class SerialService extends Service implements SerialInputOutputManager.L
             try {
                 finalPort.write(bytes, 2000);
             } catch (IOException e) {
-                Log.e("SerialService", "Error writing to port: ", e);
+                Log.e("USBService", "Error writing to port: ", e);
             }
         }
         else{
@@ -89,11 +90,11 @@ public class SerialService extends Service implements SerialInputOutputManager.L
             while (bytesRead > 0) {
                 bytesRead = finalPort.read(buf, 500);
                 if(bytesRead > 0){
-                    Log.i("SerialService", "emptied " + bytesRead + " bytes from read buffer");
+                    Log.i("USBService", "emptied " + bytesRead + " bytes from read buffer");
                 }
             }
         } catch (IOException e) {
-            Log.e("SerialService", "Error reading while emptying buffer", e);
+            Log.e("USBService", "Error reading while emptying buffer", e);
         }
     }
 
@@ -225,18 +226,12 @@ public class SerialService extends Service implements SerialInputOutputManager.L
         }
     }
 
-    public void sendStringBytes(byte[] stringBytes) {
+    public void printStringBytes(byte[] stringBytes) {
         String message = new String(stringBytes, StandardCharsets.US_ASCII);
-        //Log.i("console", message);
-        repository.appendMessage(message);
+        Console.print(message);
         Log.i("console", message);
     }
 
-
-    public void sendString(String string){
-        // Update the console data in the repository
-        repository.appendMessage(string);
-    }
 
     public void changeStatus(String status) {
         Intent intent = new Intent(Constants.ACTION_UPDATE_STATUS);

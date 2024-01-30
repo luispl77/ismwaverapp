@@ -20,9 +20,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.R;
-import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentPacketModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
+import com.emwaver.ismwaver.jsobjects.Utils;
 
 public class PacketModeFragment extends Fragment {
 
@@ -31,16 +32,16 @@ public class PacketModeFragment extends Fragment {
     private PacketModeViewModel packetModeViewModel;
 
     private CC1101 cc;
-    private SerialService serialService;
+    private USBService USBService;
     private boolean isServiceBound = false;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            SerialService.LocalBinder binder = (SerialService.LocalBinder) service;
-            serialService = binder.getService();
+            USBService.LocalBinder binder = (USBService.LocalBinder) service;
+            USBService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            cc = new CC1101(serialService);
+            cc = new CC1101(USBService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -156,7 +157,7 @@ public class PacketModeFragment extends Fragment {
                         return;
                     }
                     // Convert hex string to byte array
-                    byte[] syncWord = cc.convertHexStringToByteArray(hexInput);
+                    byte[] syncWord = Utils.convertHexStringToByteArray(hexInput);
                     if (syncWord == null) {
                         showToastOnUiThread("Invalid hex input");
                         return;
@@ -202,7 +203,7 @@ public class PacketModeFragment extends Fragment {
             public void onClick(View v) {
                 String payload = binding.transmitPayloadDataTextInput.getText().toString();
                 Log.i("Payload", payload);
-                byte [] payload_bytes = cc.convertHexStringToByteArray(payload);
+                byte [] payload_bytes = Utils.convertHexStringToByteArray(payload);
 
                 new Thread(() -> {
                     cc.sendData(payload_bytes, payload_bytes.length, 300);
@@ -220,7 +221,7 @@ public class PacketModeFragment extends Fragment {
                         return;
                     }
                     Log.i("Received", cc.toHexStringWithHexPrefix(receivedBytes));
-                    String hexString = cc.bytesToHexString(receivedBytes);
+                    String hexString = Utils.bytesToHexString(receivedBytes);
                     getActivity().runOnUiThread(() ->
                             binding.receivePayloadDataTextInput.setText(hexString));
                 }).start();
@@ -307,7 +308,7 @@ public class PacketModeFragment extends Fragment {
     public void onStart() {
         super.onStart();
         if (!isServiceBound && getActivity() != null) {
-            Intent intent = new Intent(getActivity(), SerialService.class);
+            Intent intent = new Intent(getActivity(), USBService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }

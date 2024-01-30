@@ -2,13 +2,13 @@ package com.emwaver.ismwaver.jsobjects;
 
 import android.util.Log;
 
-import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.USBService;
 
 import java.util.Arrays;
 
 public class CC1101 {
 
-    private final SerialService serialService;
+    private final USBService USBService;
 
     // CC1101 Configuration Registers
     public static final byte CC1101_IOCFG2 = 0x00;       // GDO2 output pin configuration
@@ -115,15 +115,15 @@ public class CC1101 {
     public static final byte BYTES_IN_RXFIFO = 0x7F;            //byte number in RXfifo mask
 
 
-    public CC1101(SerialService serialService) {
-        this.serialService = serialService;
+    public CC1101(USBService USBService) {
+        this.USBService = USBService;
     }
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];
         byte[] response;
         command[0] = '%'; // command strobe character
         command[1] = commandStrobe;
-        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("spiStrobe", Arrays.toString(response));  //response is the status byte
     }
     public void writeBurstReg(byte addr, byte[] data, byte len){
@@ -133,7 +133,7 @@ public class CC1101 {
         command[1] = addr; //burst write >[addr][len][data]
         command[2] = len;
         System.arraycopy(data, 0, command, 3, data.length); // Efficient array copy
-        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
         //Log.i("writeBurstReg", toHexStringWithHexPrefix(response)); //response is the status byte
     }
     public byte [] readBurstReg(byte addr, int len){
@@ -142,7 +142,7 @@ public class CC1101 {
         command[0] = '<'; //read burst reg character
         command[1] = addr; ////burst read <[addr][len]
         command[2] = (byte)len;
-        response = serialService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
         Log.i("readBurstReg", toHexStringWithHexPrefix(response));
         return response;
     }
@@ -151,7 +151,7 @@ public class CC1101 {
         byte [] response = new byte[1];
         command[0] = '?'; //read reg character
         command[1] = addr; //single read ?[addr]
-        response = serialService.sendCommandAndGetResponse(command, (byte)1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, (byte)1, 1, 1000);
         Log.i("readReg", toHexStringWithHexPrefix(response));
         return response[0];
     }
@@ -161,7 +161,7 @@ public class CC1101 {
         command[0] = '!'; //write reg character
         command[1] = addr; //single write ![addr][data]
         command[2] = data;
-        response = serialService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
         Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
     }
     public void sendData(byte [] txBuffer, int size, int t) {
@@ -196,7 +196,7 @@ public class CC1101 {
         byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Transmit init done\n";
         int length = responseString.length();
-        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -205,7 +205,7 @@ public class CC1101 {
         byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
         String responseString = "Receive init done\n";
         int length = responseString.length();
-        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -214,7 +214,7 @@ public class CC1101 {
         byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
         String responseString = "<STR>Continuous mode 433/Rx values init done\n</STR>";
         int length = responseString.length();
-        byte[] response = serialService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -413,7 +413,7 @@ public class CC1101 {
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
         int expectedLength = 4; // Expected length of the response; adjust as needed
-        byte[] response = serialService.sendCommandAndGetResponse(command, expectedLength, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, expectedLength, 1, 1000);
 
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
@@ -425,43 +425,7 @@ public class CC1101 {
 
         return false;
     }
-    public static String bytesToHexString(byte[] bytes) { //todo: verify change to static does not break anything
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : bytes) {
-            String hex = Integer.toHexString(0xFF & b);
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-            hexString.append(hex);
-        }
-        return hexString.toString();
-    }
-    public byte[] convertHexStringToByteArray(String hexString) {
-        // Remove any non-hex characters (like spaces) if present
-        hexString = hexString.replaceAll("[^0-9A-Fa-f]", "");
-        Log.i("Hex Conversion", hexString);
 
-        // Check if the string has an even number of characters
-        if (hexString.length() % 2 != 0) {
-            Log.e("Hex Conversion", "Invalid hex string");
-            return null; // Return null or throw an exception as appropriate
-        }
-
-        byte[] bytes = new byte[hexString.length() / 2];
-
-        StringBuilder hex_string = new StringBuilder();
-
-        for (int i = 0; i < bytes.length; i++) {
-            int index = i * 2;
-            int value = Integer.parseInt(hexString.substring(index, index + 2), 16);
-            bytes[i] = (byte) value;
-            hex_string.append(String.format("%02X ", bytes[i]));
-        }
-
-        Log.i("Payload bytes", hex_string.toString());
-
-        return bytes;
-    }
 
 
 }

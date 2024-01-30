@@ -24,7 +24,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
-import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentFlashBinding;
 
 import java.util.Arrays;
@@ -40,18 +40,18 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
     private static final int PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 100; // A unique request code
     private TextView status;
 
-    private SerialService serialService;
+    private USBService USBService;
 
     private boolean isServiceBound = false;
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            SerialService.LocalBinder binder = (SerialService.LocalBinder) service;
-            serialService = binder.getService();
+            USBService.LocalBinder binder = (USBService.LocalBinder) service;
+            USBService = binder.getService();
             isServiceBound = true;
             // Set the UsbDeviceConnection in Dfu
-            //dfu.setUsbDeviceConnection(serialService.getUsbDeviceConnection());
+            //dfu.setUsbDeviceConnection(USBService.getUsbDeviceConnection());
             Log.i("service binding", "onServiceConnected");
         }
         @Override
@@ -76,7 +76,7 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
         binding.connectButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
-                serialService.connectUSBFlash();
+                USBService.connectUSBFlash();
             }
         });
 
@@ -159,7 +159,7 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
     public void onStart() {
         super.onStart();
         if (!isServiceBound && getActivity() != null) {
-            Intent intent = new Intent(getActivity(), SerialService.class);
+            Intent intent = new Intent(getActivity(), USBService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
         IntentFilter filter = new IntentFilter(Constants.ACTION_CONNECT_USB_BOOTLOADER);

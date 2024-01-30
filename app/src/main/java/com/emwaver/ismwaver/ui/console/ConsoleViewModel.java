@@ -5,7 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 public class ConsoleViewModel extends ViewModel {
-    private ConsoleRepository repository = ConsoleRepository.getInstance();
+    private final ConsoleRepository repository = ConsoleRepository.getInstance();
 
     public LiveData<String> getConsoleData() {
         return repository.getConsoleData();

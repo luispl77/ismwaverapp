@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupWithNavController(binding.navView, navController);
 
 
-        Intent serviceIntent = new Intent(this, SerialService.class);
+        Intent serviceIntent = new Intent(this, USBService.class);
         startService(serviceIntent);
 
     }

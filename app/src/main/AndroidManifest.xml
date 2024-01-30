@@ -34,7 +34,7 @@ xmlns:tools="http://schemas.android.com/tools">
             android:resource="@xml/usb_device_filter" />
 
     </activity>
-    <service android:name=".SerialService" />
+    <service android:name=".USBService" />
 
 </application>
 

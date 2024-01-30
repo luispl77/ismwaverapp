@@ -1,13 +1,10 @@
 package com.emwaver.ismwaver.ui.console;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -24,13 +21,11 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
-import com.emwaver.ismwaver.R;
-import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentConsoleBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
 import com.emwaver.ismwaver.jsobjects.Console;
@@ -42,7 +37,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 
 public class ConsoleFragment extends Fragment {
@@ -54,7 +48,7 @@ public class ConsoleFragment extends Fragment {
     private CC1101 cc;
     private Console console;
     private Utils utils;
-    private SerialService serialService;
+    private USBService USBService;
     private boolean isServiceBound = false;
     private ActivityResultLauncher<Intent> createFileLauncher;
     private ActivityResultLauncher<String[]> openFileLauncher;
@@ -62,11 +56,11 @@ public class ConsoleFragment extends Fragment {
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
-            SerialService.LocalBinder binder = (SerialService.LocalBinder) service;
-            serialService = binder.getService();
+            USBService.LocalBinder binder = (USBService.LocalBinder) service;
+            USBService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            cc = new CC1101(serialService);
+            cc = new CC1101(USBService);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -95,9 +89,9 @@ public class ConsoleFragment extends Fragment {
         loadScriptFromAssets();
 
 
-        console = new Console(getContext());
+        console = new Console();
 
-        utils = new Utils(getContext());
+        utils = new Utils();
 
 
         binding.saveFileAsButton.setOnClickListener(v -> {
@@ -105,7 +99,7 @@ public class ConsoleFragment extends Fragment {
         });
 
         binding.saveFileButton.setOnClickListener(v -> {
-            //buttonSaveFile();
+            buttonSaveFile();
         });
 
         binding.openFileButton.setOnClickListener(v -> {
@@ -119,16 +113,15 @@ public class ConsoleFragment extends Fragment {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
                         ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
-                        serialService.changeStatus("Running script...");
+                        USBService.changeStatus("Running script...");
                         String result = scriptsEngine.executeJavaScript(jsCode);
-                        serialService.sendString("\n>");
+                        Console.print("\n>");
                         if(result != null){
-                            serialService.sendString(result);
-                            serialService.sendString("\n>");
+                            Console.print(result);
                         }
                     } finally {
                         unbindServiceIfNeeded();
-                        serialService.changeStatus("");
+                        USBService.changeStatus("");
                     }
                 }).start();
             }
@@ -137,7 +130,7 @@ public class ConsoleFragment extends Fragment {
         terminalTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
-                serialService.write(userInput.getBytes()); // Send to SerialService for transmitting over USB
+                USBService.write(userInput.getBytes()); // Send to USBService for transmitting over USB
                 consoleViewModel.appendData(userInput+"\n>");
                 terminalTextInput.setText("");
             }
@@ -152,7 +145,7 @@ public class ConsoleFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Constants.ACTION_INITIATE_USB_CONNECTION);
-                getContext().sendBroadcast(intent); // Send intent to SerialService to initiate USB connection
+                getContext().sendBroadcast(intent); // Send intent to USBService to initiate USB connection
             }
         });
 
@@ -202,7 +195,7 @@ public class ConsoleFragment extends Fragment {
         super.onStart();
         // bind service
         if (!isServiceBound && getActivity() != null) {
-            Intent intent = new Intent(getActivity(), SerialService.class);
+            Intent intent = new Intent(getActivity(), USBService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }
@@ -233,6 +226,10 @@ public class ConsoleFragment extends Fragment {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
         openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
+    }
+
+    public void buttonSaveFile() {
+        writeChangesToFile();
     }
 
     private void saveFileToUri(Uri uri) {
@@ -287,6 +284,22 @@ public class ConsoleFragment extends Fragment {
             Log.e("assets", "Error loading script from assets", e);
         }
     }
+
+    private void writeChangesToFile() {
+        if (currentFileUri == null) {
+            Log.e("filesys", "No file is currently open");
+            return;
+        }
+
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(currentFileUri)) {
+            String fileContent = binding.jsCodeInput.getText().toString();
+            outstream.write(fileContent.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
+    }
+
+
 
 
 }
