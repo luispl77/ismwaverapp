@@ -113,7 +113,7 @@ public class ConsoleFragment extends Fragment {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
                         ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
-                        USBService.changeStatus("Running script...");
+                        Utils.changeStatus("Running script...", getContext());
                         String result = scriptsEngine.executeJavaScript(jsCode);
                         Console.print("\n>");
                         if(result != null){
@@ -121,7 +121,7 @@ public class ConsoleFragment extends Fragment {
                         }
                     } finally {
                         unbindServiceIfNeeded();
-                        USBService.changeStatus("");
+                        Utils.changeStatus("", getContext());
                     }
                 }).start();
             }

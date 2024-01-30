@@ -62,6 +62,13 @@ public class Utils {
         return bytes;
     }
 
+    public static void changeStatus(String status, Context context) {
+        Intent intent = new Intent(Constants.ACTION_UPDATE_STATUS);
+        // Convert the message to bytes
+        intent.putExtra("status", status);
+        context.sendBroadcast(intent);
+    }
+
 
 
 }

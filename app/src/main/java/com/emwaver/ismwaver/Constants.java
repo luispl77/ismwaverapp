@@ -6,10 +6,7 @@ public class Constants {
     public static final String ACTION_CONNECT_USB = "com.example.ACTION_CONNECT_USB";
     public static final String ACTION_CONNECT_USB_BOOTLOADER = "com.example.emwaver10.GRANT_USB";
 
-
-
-    // Action string for the broadcast when data is received from USB
-    public static final String ACTION_USB_DATA_RECEIVED = "com.example.ACTION_USB_DATA";
+    // Action string for the status bar message
     public static final String ACTION_UPDATE_STATUS = "com.example.UPDATE_STATUS";
 
     // Any other constant values that are used across multiple classes

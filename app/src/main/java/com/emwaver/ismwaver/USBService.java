@@ -18,7 +18,6 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.emwaver.ismwaver.jsobjects.Console;
-import com.emwaver.ismwaver.ui.console.ConsoleRepository;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
@@ -60,9 +59,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
         }
     }
 
-    private ConsoleRepository repository = ConsoleRepository.getInstance();
-
-
     public void write(byte[] bytes){
         if(bytes != null && finalPort != null) {
             try {
@@ -97,8 +93,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
             Log.e("USBService", "Error reading while emptying buffer", e);
         }
     }
-
-
 
 
     private final BroadcastReceiver connectReceiver = new BroadcastReceiver() {
@@ -231,15 +225,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
         Console.print(message);
         Log.i("console", message);
     }
-
-
-    public void changeStatus(String status) {
-        Intent intent = new Intent(Constants.ACTION_UPDATE_STATUS);
-        // Convert the message to bytes
-        intent.putExtra("status", status);
-        this.sendBroadcast(intent);
-    }
-
 
     @Override
     public void onCreate() {
