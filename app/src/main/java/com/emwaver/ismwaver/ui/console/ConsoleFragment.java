@@ -96,7 +96,7 @@ public class ConsoleFragment extends Fragment {
         utils = new Utils();
 
         binding.toggleView.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if(directComms != isChecked)
+            if(directComms == isChecked)
                 USBService.setDirectComms(directComms);
             directComms = isChecked;
             Log.i("directComms", "" + directComms);
@@ -122,6 +122,9 @@ public class ConsoleFragment extends Fragment {
         binding.executeScriptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                directComms = false;
+                USBService.setDirectComms(false);
+                binding.toggleView.setChecked(false);
                 new Thread(() -> {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
