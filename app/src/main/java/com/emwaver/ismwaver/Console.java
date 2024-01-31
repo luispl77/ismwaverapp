@@ -1,4 +1,4 @@
-package com.emwaver.ismwaver.jsobjects;
+package com.emwaver.ismwaver;
 
 import android.content.Context;
 import android.content.Intent;

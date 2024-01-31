@@ -13,6 +13,18 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_begin="366dp" />
 
+
+    <ToggleButton
+        android:id="@+id/toggleView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOn="CLI"
+        android:textOff="Console"
+        android:checked="true"
+        app:layout_constraintStart_toEndOf="@+id/executeScriptButton"
+        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
+
+
     <ScrollView
         android:id="@+id/scrollView2"
         android:layout_width="match_parent"
@@ -30,6 +42,7 @@
                 android:id="@+id/jsCodeInput"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:autofillHints="null"
                 android:fontFamily="monospace"
                 android:gravity="start|top"
                 android:inputType="textMultiLine|textNoSuggestions"
@@ -37,7 +50,6 @@
                 android:scrollHorizontally="true"
                 android:text=""
                 android:textSize="11sp"
-                android:autofillHints="null"
                 tools:ignore="LabelFor" />
 
         </HorizontalScrollView>
@@ -84,7 +96,7 @@
         android:layout_height="wrap_content"
         android:text="@string/connect"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline"/>
+        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
 
     <!-- Clear Button at the top -->
 
@@ -95,15 +107,6 @@
         android:layout_height="wrap_content"
         android:text="@string/clear"
         app:layout_constraintStart_toEndOf="@+id/connectButton"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-
-    <CheckBox
-        android:id="@+id/directCommsCheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="true"
-        android:text="direct"
-        app:layout_constraintStart_toEndOf="@+id/executeScriptButton"
         app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
 
 

@@ -22,14 +22,15 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentConsoleBinding;
-import com.emwaver.ismwaver.jsobjects.CC1101;
-import com.emwaver.ismwaver.jsobjects.Console;
-import com.emwaver.ismwaver.jsobjects.Utils;
+import com.emwaver.ismwaver.CC1101;
+import com.emwaver.ismwaver.Console;
+import com.emwaver.ismwaver.Utils;
 
 
 import java.io.ByteArrayOutputStream;
@@ -42,7 +43,7 @@ import java.nio.charset.StandardCharsets;
 public class ConsoleFragment extends Fragment {
     private FragmentConsoleBinding binding;
     private EditText terminalTextInput;
-    private TextView consoleText;
+    private TextView windowText;
     private ConsoleViewModel consoleViewModel;
     private boolean directComms = true;
     private CC1101 cc;
@@ -61,9 +62,7 @@ public class ConsoleFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
-            binding.directCommsCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                USBService.setDirectComms(isChecked);
-            });
+            USBService.setDirectComms(directComms);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -78,23 +77,34 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
-        consoleText = binding.consoleText; //get bindings
+        windowText = binding.consoleText; //get bindings
         terminalTextInput = binding.terminalTextInput;
-        consoleText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
+        windowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
         // Observe the LiveData and update the UI accordingly
         consoleViewModel = new ViewModelProvider(this).get(ConsoleViewModel.class);
 
-        consoleViewModel.getConsoleData().observe(getViewLifecycleOwner(), data -> {
-            consoleText.setText(data);
+        consoleViewModel.getWindowData(directComms).observe(getViewLifecycleOwner(), data -> {
+            windowText.setText(data);
         });
 
-        loadScriptFromAssets();
+        //loadScriptFromAssets();
 
 
         console = new Console();
 
         utils = new Utils();
+
+        binding.toggleView.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(directComms != isChecked)
+                USBService.setDirectComms(directComms);
+            directComms = isChecked;
+            Log.i("directComms", "" + directComms);
+            LiveData<String> windowData = consoleViewModel.getWindowData(directComms);
+            windowData.observe(getViewLifecycleOwner(), data -> {
+                windowText.setText(data);
+            });
+        });
 
 
         binding.saveFileAsButton.setOnClickListener(v -> {
@@ -133,9 +143,12 @@ public class ConsoleFragment extends Fragment {
         terminalTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
-                if(USBService.getDirectComms())
+                if(directComms && USBService.finalPort != null){
                     USBService.write(userInput.getBytes()); // Send to USBService for transmitting over USB
-                consoleViewModel.appendData(userInput+"\n>");
+                    consoleViewModel.appendData("<ISMWaver>"+userInput+"\n", true);
+                }else if(!directComms){
+                    consoleViewModel.appendData("<Console>"+userInput+"\n", false);
+                }
                 terminalTextInput.setText("");
             }
             return false;
@@ -154,7 +167,12 @@ public class ConsoleFragment extends Fragment {
         binding.clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                consoleViewModel.clearConsoleData();
+                consoleViewModel.clearWindowData(directComms);
+                if(directComms){
+                    consoleViewModel.appendData("<ISMWaver>", true);
+                }else{
+                    consoleViewModel.appendData("<Console>", false);
+                }
             }
         });
 

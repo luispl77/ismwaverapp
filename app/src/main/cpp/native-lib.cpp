@@ -11,6 +11,10 @@ std::vector<char>* g_currentBufferPtr = &commandBuffer;
 
 bool directComms = true;
 
+bool isNewCommandAvailable = false;
+
+
+
 
 
 extern "C" {
@@ -64,13 +68,20 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_addToBuffer(JNIEnv *
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
 
+    g_currentBufferPtr->clear(); // Clear the buffer before inserting new data
     g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 
-    if (g_currentBufferPtr == &commandBuffer && directComms) {
+    if (directComms) {
         Java_com_emwaver_ismwaver_USBService_printStringConsoleNative(env, serialService, data);
+        return;
+    }
+
+    if (g_currentBufferPtr == &commandBuffer) {
+        isNewCommandAvailable = true; // Set the flag indicating a new command is available
     }
 }
+
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getCommandBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(commandBuffer.size());
 }
@@ -101,6 +112,26 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_pollData(JNIEn
 
 return returnArray;
 }
+
+JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getCommand(JNIEnv *env, jobject) {
+    if (!isNewCommandAvailable) {
+        // No new command available, return an empty array
+        return env->NewByteArray(0);
+    }
+    int lenToPoll = commandBuffer.size();
+    jbyteArray returnArray = env->NewByteArray(lenToPoll);
+
+    if (lenToPoll > 0) {
+        // Copy the command into the returnArray
+        env->SetByteArrayRegion(returnArray, 0, lenToPoll, reinterpret_cast<const jbyte*>(commandBuffer.data()));
+        // Clear the command buffer and reset the new command flag
+        commandBuffer.clear();
+        isNewCommandAvailable = false;
+    }
+    return returnArray;
+}
+
+
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
     int lenToCopy = end - start;
     if (lenToCopy <= 0 || start < 0 || start >= dataBuffer.size() || end > dataBuffer.size()) {

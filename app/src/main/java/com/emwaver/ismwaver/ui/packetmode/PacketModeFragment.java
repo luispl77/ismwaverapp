@@ -22,8 +22,8 @@ import androidx.lifecycle.ViewModelProvider;
 import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentPacketModeBinding;
-import com.emwaver.ismwaver.jsobjects.CC1101;
-import com.emwaver.ismwaver.jsobjects.Utils;
+import com.emwaver.ismwaver.CC1101;
+import com.emwaver.ismwaver.Utils;
 
 public class PacketModeFragment extends Fragment {
 

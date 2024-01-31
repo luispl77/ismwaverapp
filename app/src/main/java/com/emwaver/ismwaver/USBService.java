@@ -17,7 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.emwaver.ismwaver.jsobjects.Console;
+import com.emwaver.ismwaver.ui.console.CLIRepository;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
@@ -25,6 +25,7 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -34,11 +35,12 @@ public class USBService extends Service implements SerialInputOutputManager.List
         System.loadLibrary("native-lib");
     }
     private SerialInputOutputManager ioManager;
-    private UsbSerialPort finalPort = null;
+    public UsbSerialPort finalPort = null;
     private final IBinder binder = new LocalBinder();
     public native void addToBuffer(byte[] data);
     public native int getDataBufferLength();
     public native int getCommandBufferLength();
+    public native byte[] getCommand();
     public native void setDirectComms(boolean direct);
     public native boolean getDirectComms();
     public native byte[] pollData(int length);
@@ -130,7 +132,9 @@ public class USBService extends Service implements SerialInputOutputManager.List
     //Called when new data arrives on the USB port that is connected. Stores date in buffer in c++ environment
     @Override
     public void onNewData(byte[] data) {
+
         addToBuffer(data);
+        //Log.i("onNewData", Arrays.toString(data));
     }
 
     //Finds the port in which the USB device is connected to. Connects to the driver and returns the port.
@@ -223,7 +227,7 @@ public class USBService extends Service implements SerialInputOutputManager.List
 
     public void printStringBytes(byte[] stringBytes) {
         String message = new String(stringBytes, StandardCharsets.US_ASCII);
-        Console.print(message);
+        CLIRepository.getInstance().appendMessage(message);
         Log.i("console", message);
     }
 
@@ -264,31 +268,26 @@ public class USBService extends Service implements SerialInputOutputManager.List
         return START_STICKY;
     }
 
-
-    public byte[] sendCommandAndGetResponse(byte[] command, int expectedResponseSize, int busyDelay, long timeoutMillis) {
+    public byte[] sendCommandAndGetResponse(byte[] command, long timeoutMillis) {
         // Send the command
+        Log.i("beforeCommand", ""+System.nanoTime());
         write(command);
-
         long startTime = System.currentTimeMillis(); // Start time for timeout
-
-        // Wait for the response with timeout
-        while (getCommandBufferLength() < expectedResponseSize) {
+        Log.i("startTime", ""+System.nanoTime());
+        // Continuously check for a new command with timeout
+        byte[] response;
+        while (true) {
+            response = getCommand(); // Check for new command
+            if (response != null && response.length > 0) {
+                break; // Break if a command is received
+            }
             if (System.currentTimeMillis() - startTime > timeoutMillis) {
+                Log.e("timeout", "timeout");
                 return null; // Timeout occurred
             }
-            try {
-                Thread.sleep(busyDelay); // Wait for it to arrive
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return null;
-            }
         }
-
-        // Retrieve the response
-        byte[] response = new byte[expectedResponseSize];
-        response = pollData(expectedResponseSize);
-
-        clearCommandBuffer(); // Optionally clear the queue after processing (pollData() should already clear the response)
+        Log.i("endTime", ""+System.nanoTime());
+        // Return the response
         return response;
     }
 

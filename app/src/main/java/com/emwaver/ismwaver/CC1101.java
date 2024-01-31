@@ -1,4 +1,4 @@
-package com.emwaver.ismwaver.jsobjects;
+package com.emwaver.ismwaver;
 
 import android.util.Log;
 
@@ -123,7 +123,8 @@ public class CC1101 {
         byte[] response;
         command[0] = '%'; // command strobe character
         command[1] = commandStrobe;
-        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        //response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1000);
         //Log.i("spiStrobe", Arrays.toString(response));  //response is the status byte
     }
     public void writeBurstReg(byte addr, byte[] data, byte len){
@@ -133,7 +134,8 @@ public class CC1101 {
         command[1] = addr; //burst write >[addr][len][data]
         command[2] = len;
         System.arraycopy(data, 0, command, 3, data.length); // Efficient array copy
-        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        //response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1000);
         //Log.i("writeBurstReg", toHexStringWithHexPrefix(response)); //response is the status byte
     }
     public byte [] readBurstReg(byte addr, int len){
@@ -142,7 +144,8 @@ public class CC1101 {
         command[0] = '<'; //read burst reg character
         command[1] = addr; ////burst read <[addr][len]
         command[2] = (byte)len;
-        response = USBService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
+        //response = USBService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1000);
         Log.i("readBurstReg", toHexStringWithHexPrefix(response));
         return response;
     }
@@ -151,7 +154,7 @@ public class CC1101 {
         byte [] response = new byte[1];
         command[0] = '?'; //read reg character
         command[1] = addr; //single read ?[addr]
-        response = USBService.sendCommandAndGetResponse(command, (byte)1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1000);
         Log.i("readReg", toHexStringWithHexPrefix(response));
         return response[0];
     }
@@ -161,7 +164,7 @@ public class CC1101 {
         command[0] = '!'; //write reg character
         command[1] = addr; //single write ![addr][data]
         command[2] = data;
-        response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
+        response = USBService.sendCommandAndGetResponse(command, 1000);
         Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
     }
     public void sendData(byte [] txBuffer, int size, int t) {
@@ -194,27 +197,21 @@ public class CC1101 {
     }
     public void sendInit(){
         byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        String responseString = "Transmit init done\n";
-        int length = responseString.length();
-        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
     public void sendInitRx(){
         byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        String responseString = "Receive init done\n";
-        int length = responseString.length();
-        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
     public void sendInitRxContinuous(){
         byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
-        String responseString = "<STR>Continuous mode 433/Rx values init done\n</STR>";
-        int length = responseString.length();
-        byte[] response = USBService.sendCommandAndGetResponse(command, length, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -412,8 +409,7 @@ public class CC1101 {
     }
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
-        int expectedLength = 4; // Expected length of the response; adjust as needed
-        byte[] response = USBService.sendCommandAndGetResponse(command, expectedLength, 1, 1000);
+        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
 
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));

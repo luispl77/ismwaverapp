@@ -1,8 +1,8 @@
 package com.emwaver.ismwaver.ui.console;
 
-import com.emwaver.ismwaver.jsobjects.CC1101;
-import com.emwaver.ismwaver.jsobjects.Console;
-import com.emwaver.ismwaver.jsobjects.Utils;
+import com.emwaver.ismwaver.CC1101;
+import com.emwaver.ismwaver.Console;
+import com.emwaver.ismwaver.Utils;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.RhinoException;

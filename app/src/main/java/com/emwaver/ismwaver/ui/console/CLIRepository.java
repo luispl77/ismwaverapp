@@ -3,9 +3,9 @@ package com.emwaver.ismwaver.ui.console;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-public class ConsoleRepository {
-    private static ConsoleRepository instance;
-    private final MutableLiveData<String> consoleData = new MutableLiveData<>("<Console>");
+public class CLIRepository {
+    private static CLIRepository instance;
+    private final MutableLiveData<String> cliData = new MutableLiveData<>("<ISMWaver>");
 
     private final StringBuilder dataBuilder = new StringBuilder();
     private final Object lock = new Object();
@@ -13,27 +13,27 @@ public class ConsoleRepository {
     public void appendMessage(String message) {
         synchronized (lock) { //the lock accumulates changes
             dataBuilder.append(message);
-            consoleData.postValue(dataBuilder.toString());
+            cliData.postValue(dataBuilder.toString());
         }
     }
 
-    private ConsoleRepository() {
+    private CLIRepository() {
         // Private constructor
     }
 
-    public static synchronized ConsoleRepository getInstance() {
+    public static synchronized CLIRepository getInstance() {
         if (instance == null) {
-            instance = new ConsoleRepository();
+            instance = new CLIRepository();
         }
         return instance;
     }
 
-    public LiveData<String> getConsoleData() {
-        return consoleData;
+    public LiveData<String> getCLIData() {
+        return cliData;
     }
 
     public void clearData() {
-        consoleData.postValue(""); // Clear the data by posting an empty string
+        cliData.postValue(""); // Clear the data by posting an empty string
         dataBuilder.setLength(0); //clear the string builder
     }
 }
