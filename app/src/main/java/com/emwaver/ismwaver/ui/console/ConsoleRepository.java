@@ -7,7 +7,7 @@ public class ConsoleRepository {
     private static ConsoleRepository instance;
     private final MutableLiveData<String> consoleData = new MutableLiveData<>("<Console>");
 
-    private final StringBuilder dataBuilder = new StringBuilder();
+    private final StringBuilder dataBuilder = new StringBuilder("<Console>");
     private final Object lock = new Object();
 
     public void appendMessage(String message) {

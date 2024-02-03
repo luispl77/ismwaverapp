@@ -14,17 +14,6 @@
         app:layout_constraintGuide_begin="366dp" />
 
 
-    <ToggleButton
-        android:id="@+id/toggleView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textOn="CLI"
-        android:textOff="Console"
-        android:checked="true"
-        app:layout_constraintStart_toEndOf="@+id/executeScriptButton"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-
-
     <ScrollView
         android:id="@+id/scrollView2"
         android:layout_width="match_parent"
@@ -111,16 +100,16 @@
 
 
     <ScrollView
-        android:id="@+id/scrollView4"
+        android:id="@+id/consoleWindowScrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/terminalTextInput"
+        app:layout_constraintBottom_toTopOf="@+id/consoleTextInput"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/clearButton">
 
         <TextView
-            android:id="@+id/consoleText"
+            android:id="@+id/consoleWindowText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="vertical"
@@ -131,7 +120,7 @@
 
     <!-- User Input EditText -->
     <EditText
-        android:id="@+id/terminalTextInput"
+        android:id="@+id/consoleTextInput"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#EEE"

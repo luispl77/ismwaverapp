@@ -17,15 +17,12 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.emwaver.ismwaver.ui.console.CLIRepository;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -37,13 +34,10 @@ public class USBService extends Service implements SerialInputOutputManager.List
     private SerialInputOutputManager ioManager;
     public UsbSerialPort finalPort = null;
     private final IBinder binder = new LocalBinder();
-    public native void addToBuffer(byte[] data);
+    public native void storeBulkPkt(byte[] data);
     public native int getDataBufferLength();
     public native int getCommandBufferLength();
     public native byte[] getCommand();
-    public native void setDirectComms(boolean direct);
-    public native boolean getDirectComms();
-    public native byte[] pollData(int length);
     public native void clearDataBuffer();
     public native void clearCommandBuffer();
     public native Object[] compressDataBits(int rangeStart, int rangeEnd, int numberBins);
@@ -132,9 +126,8 @@ public class USBService extends Service implements SerialInputOutputManager.List
     //Called when new data arrives on the USB port that is connected. Stores date in buffer in c++ environment
     @Override
     public void onNewData(byte[] data) {
-
-        addToBuffer(data);
-        //Log.i("onNewData", Arrays.toString(data));
+        storeBulkPkt(data);
+        //Log.i("bulkPacket", Arrays.toString(data));
     }
 
     //Finds the port in which the USB device is connected to. Connects to the driver and returns the port.
@@ -223,12 +216,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
         if (!deviceFound) {
             Toast.makeText(this, "No STM32 bootloader connected", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    public void printStringBytes(byte[] stringBytes) {
-        String message = new String(stringBytes, StandardCharsets.US_ASCII);
-        CLIRepository.getInstance().appendMessage(message);
-        Log.i("console", message);
     }
 
     @Override

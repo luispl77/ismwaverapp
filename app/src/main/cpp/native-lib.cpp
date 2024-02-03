@@ -2,24 +2,14 @@
 #include <string>
 #include <vector>
 
-
-
-
 std::vector<char> dataBuffer;
 std::vector<char> commandBuffer;
 std::vector<char>* g_currentBufferPtr = &commandBuffer;
 
-bool directComms = true;
 
 bool isNewCommandAvailable = false;
 
-
-
-
-
 extern "C" {
-
-
 
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getDataBuffer(JNIEnv *env, jobject) {
     if (dataBuffer.empty()) {
@@ -44,12 +34,6 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_loadDataBuffer(JNIEn
 
     env->ReleaseByteArrayElements(data, dataBytes, 0);
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setDirectComms(JNIEnv *env, jobject, jboolean direct) {
-    directComms = direct;
-}
-JNIEXPORT jboolean JNICALL Java_com_emwaver_ismwaver_USBService_getDirectComms(JNIEnv *env, jobject) {
-    return directComms;
-}
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setBuffer(JNIEnv *env, jobject, jboolean data_buffer) {
     if(data_buffer){
         g_currentBufferPtr = &dataBuffer;
@@ -58,30 +42,17 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setBuffer(JNIEnv *en
         g_currentBufferPtr = &commandBuffer;
     }
 }
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_printStringConsoleNative(JNIEnv *env, jobject javaService, jbyteArray data) {
-    jclass serviceClass = env->GetObjectClass(javaService);
-    jmethodID sendIntentMethod = env->GetMethodID(serviceClass, "printStringBytes", "([B)V");
-
-    env->CallVoidMethod(javaService, sendIntentMethod, data);
-}
-JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_addToBuffer(JNIEnv *env, jobject serialService, jbyteArray data) {
+JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_storeBulkPkt(JNIEnv *env, jobject serialService, jbyteArray data) {
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
 
     g_currentBufferPtr->clear(); // Clear the buffer before inserting new data
     g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
     env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
-
-    if (directComms) {
-        Java_com_emwaver_ismwaver_USBService_printStringConsoleNative(env, serialService, data);
-        return;
-    }
-
     if (g_currentBufferPtr == &commandBuffer) {
         isNewCommandAvailable = true; // Set the flag indicating a new command is available
     }
 }
-
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getCommandBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(commandBuffer.size());
 }
@@ -94,25 +65,6 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_clearDataBuffer(JNIE
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_clearCommandBuffer(JNIEnv *env, jobject) {
     commandBuffer.clear();
 }
-JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_pollData(JNIEnv *env, jobject, jint length) {
-    int lenToPoll = std::min(static_cast<int>(commandBuffer.size()), length);
-    jbyteArray returnArray = env->NewByteArray(lenToPoll);
-
-    if (lenToPoll > 0) {
-    auto startIt = commandBuffer.begin();
-    auto endIt = startIt + lenToPoll;
-
-    // Copy the data into a temporary buffer
-    std::vector<char> tempBuffer(startIt, endIt);
-    env->SetByteArrayRegion(returnArray, 0, lenToPoll, reinterpret_cast<const jbyte*>(tempBuffer.data()));
-
-    // Remove the polled data from the buffer
-    commandBuffer.erase(startIt, endIt);
-}
-
-return returnArray;
-}
-
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getCommand(JNIEnv *env, jobject) {
     if (!isNewCommandAvailable) {
         // No new command available, return an empty array
@@ -130,8 +82,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getCommand(JNI
     }
     return returnArray;
 }
-
-
 JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_getBufferRange(JNIEnv *env, jobject, jint start, jint end) {
     int lenToCopy = end - start;
     if (lenToCopy <= 0 || start < 0 || start >= dataBuffer.size() || end > dataBuffer.size()) {
@@ -333,7 +283,5 @@ JNIEXPORT jbyteArray JNICALL Java_com_emwaver_ismwaver_USBService_extractBitsFro
 
     return byteArray;
 }
-
-
 
 }

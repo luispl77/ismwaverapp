@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -45,7 +46,6 @@ public class ConsoleFragment extends Fragment {
     private EditText terminalTextInput;
     private TextView windowText;
     private ConsoleViewModel consoleViewModel;
-    private boolean directComms = true;
     private CC1101 cc;
     private Console console;
     private Utils utils;
@@ -62,7 +62,6 @@ public class ConsoleFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
-            USBService.setDirectComms(directComms);
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -77,15 +76,14 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
-        windowText = binding.consoleText; //get bindings
-        terminalTextInput = binding.terminalTextInput;
-        windowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
+        binding.consoleWindowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
         // Observe the LiveData and update the UI accordingly
         consoleViewModel = new ViewModelProvider(this).get(ConsoleViewModel.class);
 
-        consoleViewModel.getWindowData(directComms).observe(getViewLifecycleOwner(), data -> {
-            windowText.setText(data);
+        consoleViewModel.getWindowData().observe(getViewLifecycleOwner(), data -> {
+            binding.consoleWindowText.setText(data);
+            binding.consoleWindowScrollView.post(() -> binding.consoleWindowScrollView.fullScroll(View.FOCUS_DOWN));
         });
 
         //loadScriptFromAssets();
@@ -94,17 +92,6 @@ public class ConsoleFragment extends Fragment {
         console = new Console();
 
         utils = new Utils();
-
-        binding.toggleView.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if(directComms == isChecked)
-                USBService.setDirectComms(directComms);
-            directComms = isChecked;
-            Log.i("directComms", "" + directComms);
-            LiveData<String> windowData = consoleViewModel.getWindowData(directComms);
-            windowData.observe(getViewLifecycleOwner(), data -> {
-                windowText.setText(data);
-            });
-        });
 
 
         binding.saveFileAsButton.setOnClickListener(v -> {
@@ -122,42 +109,53 @@ public class ConsoleFragment extends Fragment {
         binding.executeScriptButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                directComms = false;
-                USBService.setDirectComms(false);
-                binding.toggleView.setChecked(false);
+                // Disable the clear button
+                binding.clearButton.setEnabled(false);
+                // Optionally, change the button color to grey to indicate it's disabled
+                binding.clearButton.setBackgroundColor(Color.GRAY); // Use an appropriate color
                 new Thread(() -> {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
                         ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
                         Utils.changeStatus("Running script...", getContext());
                         String result = scriptsEngine.executeJavaScript(jsCode);
-                        Console.print("\n>");
+                        Console.print("\n<Console>");
                         if(result != null){
                             Console.print(result);
                         }
                     } finally {
                         unbindServiceIfNeeded();
                         Utils.changeStatus("", getContext());
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                binding.clearButton.setEnabled(true);
+                                // Optionally, reset the button color to indicate it's enabled
+                                binding.clearButton.setBackgroundColor(Color.BLUE); // Reset to original color
+                            }
+                        });
                     }
                 }).start();
             }
         });
 
-        terminalTextInput.setOnEditorActionListener((v, actionId, event) -> {
+        binding.consoleTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
-                if(directComms && USBService.finalPort != null){
-                    USBService.write(userInput.getBytes()); // Send to USBService for transmitting over USB
-                    consoleViewModel.appendData("<ISMWaver>"+userInput+"\n", true);
-                }else if(!directComms){
-                    consoleViewModel.appendData("<Console>"+userInput+"\n", false);
-                }
+                consoleViewModel.appendData(userInput+"\n");
                 terminalTextInput.setText("");
             }
             return false;
         });
 
 
+        binding.clearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                consoleViewModel.clearWindowData();
+                consoleViewModel.appendData("<Console>");
+            }
+        });
 
         binding.connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -167,17 +165,7 @@ public class ConsoleFragment extends Fragment {
             }
         });
 
-        binding.clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                consoleViewModel.clearWindowData(directComms);
-                if(directComms){
-                    consoleViewModel.appendData("<ISMWaver>", true);
-                }else{
-                    consoleViewModel.appendData("<Console>", false);
-                }
-            }
-        });
+
 
         createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
@@ -207,12 +195,7 @@ public class ConsoleFragment extends Fragment {
     private boolean isFragmentActive() {
         return isAdded() && !isDetached() && !isRemoving();
     }
-    public void showToastOnUiThread(final String message) {
-        if (isAdded()) { // Check if Fragment is currently added to its activity
-            getActivity().runOnUiThread(() ->
-                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
-        }
-    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -287,6 +270,30 @@ public class ConsoleFragment extends Fragment {
         return byteBuffer.toByteArray();
     }
 
+    private void writeChangesToFile() {
+        if (currentFileUri == null) {
+            Log.e("filesys", "No file is currently open");
+            return;
+        }
+
+        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(currentFileUri)) {
+            String fileContent = binding.jsCodeInput.getText().toString();
+            outstream.write(fileContent.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            Log.e("filesys", "Error writing to file", e);
+        }
+    }
+
+
+
+
+    public void showToastOnUiThread(final String message) {
+        if (isAdded()) { // Check if Fragment is currently added to its activity
+            getActivity().runOnUiThread(() ->
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
+        }
+    }
+
     private void loadScriptFromAssets() {
         try {
             // Open an input stream to read from the assets folder
@@ -307,22 +314,6 @@ public class ConsoleFragment extends Fragment {
             Log.e("assets", "Error loading script from assets", e);
         }
     }
-
-    private void writeChangesToFile() {
-        if (currentFileUri == null) {
-            Log.e("filesys", "No file is currently open");
-            return;
-        }
-
-        try (OutputStream outstream = getActivity().getContentResolver().openOutputStream(currentFileUri)) {
-            String fileContent = binding.jsCodeInput.getText().toString();
-            outstream.write(fileContent.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            Log.e("filesys", "Error writing to file", e);
-        }
-    }
-
-
 
 
 }

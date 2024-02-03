@@ -383,7 +383,7 @@ public class RawModeFragment extends Fragment {
         //logBuffer(dataBuffer);
         Log.i("dataBuffer", "size: "+dataBuffer.length);
         addNoiseToSignal(dataBuffer, noise);
-        USBService.addToBuffer(dataBuffer);
+        USBService.storeBulkPkt(dataBuffer);
         Log.i("data buflen", "size: "+ USBService.getDataBufferLength());
 
     }

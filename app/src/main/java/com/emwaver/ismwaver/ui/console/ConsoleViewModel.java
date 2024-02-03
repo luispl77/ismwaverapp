@@ -8,34 +8,18 @@ import androidx.lifecycle.ViewModel;
 
 public class ConsoleViewModel extends ViewModel {
     private final ConsoleRepository consoleRepository = ConsoleRepository.getInstance();
-    private final CLIRepository cliRepository = CLIRepository.getInstance();
 
-    public LiveData<String> getWindowData(boolean isCLIMode) {
-        if (isCLIMode) {
-            Log.i("getWindowData", "cli");
-            return cliRepository.getCLIData();
-        } else {
-            Log.i("getWindowData", "console");
-            return consoleRepository.getConsoleData();
-        }
+    public LiveData<String> getWindowData() {
+        //Log.i("getWindowData", "console");
+        return consoleRepository.getConsoleData();
     }
+    public void appendData(String data) {
+        //Log.i("appendData", "console");
+        consoleRepository.appendMessage(data);
 
-    public void appendData(String data, boolean isCLIMode) {
-        if (isCLIMode) {
-            Log.i("appendData", "cli");
-            cliRepository.appendMessage(data);
-        } else {
-            Log.i("appendData", "console");
-            consoleRepository.appendMessage(data);
-        }
     }
-
-    public void clearWindowData(boolean isCLIMode) {
-        if (isCLIMode) {
-            cliRepository.clearData();
-        } else {
-            consoleRepository.clearData();
-        }
+    public void clearWindowData() {
+        consoleRepository.clearData();
     }
 }
 
