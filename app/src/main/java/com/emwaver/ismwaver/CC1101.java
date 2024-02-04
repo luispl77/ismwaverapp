@@ -2,11 +2,10 @@ package com.emwaver.ismwaver;
 
 import android.util.Log;
 
-import com.emwaver.ismwaver.USBService;
-
 import java.util.Arrays;
 
 public class CC1101 {
+
 
     private final USBService USBService;
 
@@ -114,6 +113,14 @@ public class CC1101 {
     public static final byte READ_BURST = (byte)0xC0;
     public static final byte BYTES_IN_RXFIFO = 0x7F;            //byte number in RXfifo mask
 
+    private static final int GDO_INPUT = 0;
+
+    private static final int GDO_OUTPUT = 1;
+
+    private static final int GDO_0 = 0;
+
+    private static final int GDO_2 = 1;
+
 
     public CC1101(USBService USBService) {
         this.USBService = USBService;
@@ -124,7 +131,7 @@ public class CC1101 {
         command[0] = '%'; // command strobe character
         command[1] = commandStrobe;
         //response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
-        response = USBService.sendCommandAndGetResponse(command, 1000);
+        response = USBService.sendCommand(command, 1000);
         //Log.i("spiStrobe", Arrays.toString(response));  //response is the status byte
     }
     public void writeBurstReg(byte addr, byte[] data, byte len){
@@ -135,7 +142,7 @@ public class CC1101 {
         command[2] = len;
         System.arraycopy(data, 0, command, 3, data.length); // Efficient array copy
         //response = USBService.sendCommandAndGetResponse(command, 1, 1, 1000);
-        response = USBService.sendCommandAndGetResponse(command, 1000);
+        response = USBService.sendCommand(command, 1000);
         //Log.i("writeBurstReg", toHexStringWithHexPrefix(response)); //response is the status byte
     }
     public byte [] readBurstReg(byte addr, int len){
@@ -145,7 +152,7 @@ public class CC1101 {
         command[1] = addr; ////burst read <[addr][len]
         command[2] = (byte)len;
         //response = USBService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
-        response = USBService.sendCommandAndGetResponse(command, 1000);
+        response = USBService.sendCommand(command, 1000);
         Log.i("readBurstReg", toHexStringWithHexPrefix(response));
         return response;
     }
@@ -154,7 +161,7 @@ public class CC1101 {
         byte [] response = new byte[1];
         command[0] = '?'; //read reg character
         command[1] = addr; //single read ?[addr]
-        response = USBService.sendCommandAndGetResponse(command, 1000);
+        response = USBService.sendCommand(command, 1000);
         Log.i("readReg", toHexStringWithHexPrefix(response));
         return response[0];
     }
@@ -164,7 +171,7 @@ public class CC1101 {
         command[0] = '!'; //write reg character
         command[1] = addr; //single write ![addr][data]
         command[2] = data;
-        response = USBService.sendCommandAndGetResponse(command, 1000);
+        response = USBService.sendCommand(command, 1000);
         Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
     }
     public void sendData(byte [] txBuffer, int size, int t) {
@@ -197,21 +204,21 @@ public class CC1101 {
     }
     public void sendInit(){
         byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
+        byte[] response = USBService.sendCommand(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
     public void sendInitRx(){
         byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
+        byte[] response = USBService.sendCommand(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
     }
     public void sendInitRxContinuous(){
         byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
+        byte[] response = USBService.sendCommand(command, 1000);
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
         }
@@ -409,7 +416,7 @@ public class CC1101 {
     }
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
-        byte[] response = USBService.sendCommandAndGetResponse(command, 1000);
+        byte[] response = USBService.sendCommand(command, 1000);
 
         if (response != null) {
             Log.i("Command Response", Arrays.toString(response));
@@ -422,6 +429,213 @@ public class CC1101 {
         return false;
     }
 
+    public boolean getGDO0() {
+        byte response = readReg((byte) (CC1101_PKTSTATUS | READ_BURST));
+        return (response & 1) == 1;
+    }
+
+    public boolean getGDO2() {
+        byte response = readReg((byte) (CC1101_PKTSTATUS | READ_BURST));
+        return (response & 0x04) >> 2 == 1;
+    }
+
+
+    public void initRx() {
+        byte[] PA_TABLE_OOK = {0x00, (byte) 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
+        setGDO((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
+        //writeReg(CC1101_FIFOTHR,  0x06);//smart rf ADC, fifo threshold 4 bytes in fifo (signal assert)
+
+        writeReg(CC1101_MDMCFG2, (byte) 0x32); //MOD_FORMAT: ASK/OOK, SYNC_MODE: 16/16 bits, MANCHESTER: disable
+        writeReg(CC1101_FREND0, (byte) 0x11); //selects index 1 for high state
+        writeBurstReg(CC1101_PATABLE, PA_TABLE_OOK, (byte) 8); //0x60 for high state
+
+        //given by smartrf studio:
+        writeReg(CC1101_FSCAL3, (byte) 0xE9); //default values except bit 5 which is 1. should not matter as it is a enable that is already bigger than 1 without this bit
+        writeReg(CC1101_FSCAL2, (byte) 0x2A); //frequency synth enable bit is ON (different from default) result and override value
+        writeReg(CC1101_FSCAL1, (byte) 0x00); //calibration result
+        writeReg(CC1101_FSCAL0, (byte) 0x1F); //different from default. this value is given by smartrf, the default is 0x0D (calibration control)
+        //writeReg(CC1101_WORCTRL,   0xFB); //wake on radio maximum timeout 17 hours
+        writeReg(CC1101_TEST2, (byte) 0x88); //deafult value (test register smartrf)
+        writeReg(CC1101_TEST1, (byte) 0x31); //will change from default 0x31 to 0x35 when going from SLEEP
+        writeReg(CC1101_TEST0, (byte) 0x09); //smartrf, different form default. contains bit to enable VCO selection calibration, which is by defualt 1, but here is set to 0.
+        writeReg(CC1101_MCSM0, (byte) 0x18); //main control state machine. default value for oscilattor setting, FS_AUTOCAL=1 (calibrate when IDLE->RX or TX)
+        writeReg(CC1101_FOCCFG, (byte) 0x16); //frequency offset regarding sync words. not available in ASK. the settings are not default, GATE is off, loop gain is 1 instead of 2
+        //writeReg(CC1101_DEVIATN,  0x15); //value for deviation. this setting has not effect in ASK.
+        writeReg(CC1101_FSCTRL1, (byte) 0x06); //IF frequency
+
+
+        //number of preamble bytes
+        writeReg(CC1101_MDMCFG1, (byte) 0x12); //3 preamble bytes for Tesla signal (aaaaaa), no FEC, default channel spacing exponent
+        writeReg(CC1101_MDMCFG0, (byte) 0xF8); //default channel spacing value
+
+        //bandwidth and symbol rate (bit rate)
+        writeReg(CC1101_MDMCFG4, (byte) 0x56); //325 kHz 2.5kbit
+        writeReg(CC1101_MDMCFG3, (byte) 0x93); //325 kHz 2.5kbitCC1101_FSCTRL1
+
+        //packet format
+        writeReg(CC1101_PKTCTRL0, (byte) 0x00); //use FIFO for Rx/Tx, CRC disabled, fixed packet length.
+        writeReg(CC1101_PKTCTRL1, (byte) 0x00); //fifo flush when CRC fails, append to payload RSSI disabled, no address check
+        writeReg(CC1101_PKTLEN, (byte) 39); //packet length for tesla signal: 42 bytes total, 3 are preamble, so 39 bytes
+
+        writeReg(CC1101_SYNC1, (byte) 0x8A); //sync word tesla signal
+        writeReg(CC1101_SYNC0, (byte) 0xCB); //sync word
+
+
+        writeReg(CC1101_AGCCTRL2, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL1, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL0, (byte) 0x90);
+
+        writeReg(CC1101_FIFOTHR, (byte) 0x00);
+
+        //ConfigureGDO0Pin(GDO_INPUT);
+
+    }
+
+    void init433() {
+        writeReg(CC1101_FSCAL3, (byte) 0xE9); //default values except bit 5 which is 1. should not matter as it is a enable that is already bigger than 1 without this bit
+        writeReg(CC1101_FSCAL2, (byte) 0x2A); //frequency synth enable bit is ON (different from default) result and override value
+        writeReg(CC1101_FSCAL1, (byte) 0x00); //calibration result
+        writeReg(CC1101_FSCAL0, (byte) 0x1F); //different from default. this value is given by smartrf, the default is 0x0D (calibration control)
+
+        writeReg(CC1101_TEST2, (byte) 0x81); //deafult value (test register smartrf)
+        writeReg(CC1101_TEST1, (byte) 0x35); //will change from default 0x31 to 0x35 when going from SLEEP
+        writeReg(CC1101_TEST0, (byte) 0x09); //smartrf, different form default. contains bit to enable VCO selection calibration, which is by defualt 1, but here is set to 0.
+        writeReg(CC1101_FIFOTHR, (byte) 0x47);//smartrf is recommending this for 433.92 mhz
+
+        setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
+    }
+
+    void initRxContinuous() {
+        writeReg(CC1101_PKTCTRL0, (byte) 0x32); // async serial mode (packet engine is off)
+        setGDO((byte) 0x0D, (byte) 0x2E, (byte) 0x0D);
+        init433();
+        configureGDO(GDO_0, GDO_INPUT);
+
+        writeReg(CC1101_AGCCTRL2, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL1, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL0, (byte) 0x90);
+
+
+        writeReg(CC1101_MDMCFG2, (byte) 0x30); //ASK/OOK modulation.
+        writeReg(CC1101_FREND0, (byte) 0x11); //use entry 1 of PATABLE as logical '1' for transmission.
+
+
+        writeReg(CC1101_MDMCFG0, (byte) 0xF8); //default channel spacing value
+
+        writeReg(CC1101_MDMCFG4, (byte) 0xFB); //100Kbit
+        writeReg(CC1101_MDMCFG3, (byte) 0xF8); //100Kbit
+
+
+        // Perform a manual calibration just to check if it is working
+        spiStrobe(CC1101_SIDLE);//going to idle turns off FS
+        spiStrobe(CC1101_SCAL); //calibrate freq synthesizer and turn it off
+        spiStrobe(CC1101_SFSTXON); //enable freq synthesizer
+        spiStrobe(CC1101_SRX);        //start transmit
+
+        // All future calibrations will be automatic
+        writeReg(CC1101_MCSM0 , (byte) 0x18); //main control state machine. default value for oscilattor setting, FS_AUTOCAL=1 (calibrate when IDLE->RX or TX)
+
+    }
+
+    public void initTx(){
+        byte[] PA_TABLE_OOK = {0x00, (byte) 0xC0,0x00,0x00,0x00,0x00,0x00,0x00};
+        setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
+        setGDO((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
+        //writeReg(CC1101_FIFOTHR,  0x06);//smart rf ADC, fifo threshold 4 bytes in fifo (signal assert)
+
+        writeReg(CC1101_MDMCFG2, (byte) 0x32); //MOD_FORMAT: ASK/OOK, SYNC_MODE: 16/16 bits, MANCHESTER: disable
+        writeReg(CC1101_FREND0, (byte) 0x11); //selects index 1 for high state
+        writeBurstReg(CC1101_PATABLE, PA_TABLE_OOK, (byte) 8); //0x60 for high state
+
+        //given by smartrf studio:
+        writeReg(CC1101_FSCAL3, (byte) 0xE9); //default values except bit 5 which is 1. should not matter as it is a enable that is already bigger than 1 without this bit
+        writeReg(CC1101_FSCAL2, (byte) 0x2A); //frequency synth enable bit is ON (different from default) result and override value
+        writeReg(CC1101_FSCAL1, (byte) 0x00); //calibration result
+        writeReg(CC1101_FSCAL0, (byte) 0x1F); //different from default. this value is given by smartrf, the default is 0x0D (calibration control)
+        //writeReg(CC1101_WORCTRL,   0xFB); //wake on radio maximum timeout 17 hours
+        writeReg(CC1101_TEST2, (byte) 0x88); //deafult value (test register smartrf)
+        writeReg(CC1101_TEST1, (byte) 0x31); //will change from default 0x31 to 0x35 when going from SLEEP
+        writeReg(CC1101_TEST0, (byte) 0x09); //smartrf, different form default. contains bit to enable VCO selection calibration, which is by defualt 1, but here is set to 0.
+        writeReg(CC1101_MCSM0 , (byte) 0x18); //main control state machine. default value for oscilattor setting, FS_AUTOCAL=1 (calibrate when IDLE->RX or TX)
+        writeReg(CC1101_FOCCFG, (byte) 0x16); //frequency offset regarding sync words. not available in ASK. the settings are not default, GATE is off, loop gain is 1 instead of 2
+        //writeReg(CC1101_DEVIATN,  0x15); //value for deviation. this setting has not effect in ASK.
+        writeReg(CC1101_FSCTRL1, (byte) 0x06); //IF frequency
+
+
+        //number of preamble bytes
+        writeReg(CC1101_MDMCFG1, (byte) 0x12); //3 preamble bytes for Tesla signal (aaaaaa), no FEC, default channel spacing exponent
+        writeReg(CC1101_MDMCFG0, (byte) 0xF8); //default channel spacing value
+
+        //bandwidth and symbol rate (bit rate)
+        writeReg(CC1101_MDMCFG4, (byte) 0x56); //325 kHz 2.5kbit
+        writeReg(CC1101_MDMCFG3, (byte) 0x93); //325 kHz 2.5kbitCC1101_FSCTRL1
+
+        //packet format
+        writeReg(CC1101_PKTCTRL0, (byte) 0x00); //use FIFO for Rx/Tx, CRC disabled, fixed packet length.
+        writeReg(CC1101_PKTCTRL1, (byte) 0x00); //fifo flush when CRC fails, append to payload RSSI disabled, no address check
+        writeReg(CC1101_PKTLEN, (byte) 37); //packet length for tesla signal: 42 bytes total, 3 are preamble, 2 sync cword, so 39 bytes
+
+        writeReg(CC1101_SYNC1, (byte) 0x8A); //sync word tesla signal
+        writeReg(CC1101_SYNC0, (byte) 0xCB); //sync word
+
+        writeReg(CC1101_AGCCTRL2, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL1, (byte) 0x07);
+        writeReg(CC1101_AGCCTRL0, (byte) 0x90);
+
+    }
+
+    public void initTxContinuous() {
+        byte [] PA_TABLE_OOK = {0x00, (byte) 0xC0,0x00,0x00,0x00,0x00,0x00,0x00}; //10 dbm for OOK
+        writeReg(CC1101_PKTCTRL0, (byte) 0x32); // async serial mode (packet engine is off)
+        writeReg(CC1101_IOCFG2, (byte) 0x2B); // GDO2 synchronous serial clock. should not matter in Tx, but smartrf is recommending synchronous mode when in Tx
+        writeReg(CC1101_IOCFG1, (byte) 0x2E); // high impedance
+        writeReg(CC1101_IOCFG0, (byte) 0x0C); // GDO0 as synchronous serial output. should not matter in Tx, but smartrf is recommending synchronous mode when in Tx
+        setGDO((byte) 0x2B, (byte) 0x2E, (byte) 0x0C);
+
+
+        writeReg(CC1101_MDMCFG2, (byte) 0x30); //ASK/OOK modulation.
+        writeReg(CC1101_FREND0, (byte) 0x11); //use entry 1 of PATABLE as logical '1' for transmission.
+        writeBurstReg(CC1101_PATABLE, PA_TABLE_OOK, (byte) 8);
+
+        writeReg(CC1101_MDMCFG4, (byte) 0xFB); //100Kbit
+        writeReg(CC1101_MDMCFG3, (byte) 0xF8); //100Kbit
+
+        // Perform a manual calibration just to check if it is working
+        spiStrobe(CC1101_SIDLE);//going to idle turns off FS
+        spiStrobe(CC1101_SCAL); //calibrate freq synthesizer and turn it off
+
+        spiStrobe(CC1101_SFSTXON); //enable freq synthesizer
+        spiStrobe(CC1101_STX);        //start transmit
+
+
+
+        // All future calibrations will be automatic
+        writeReg(CC1101_MCSM0 , (byte) 0x18); //main control state machine. default value for oscilattor setting, FS_AUTOCAL=1 (calibrate when IDLE->RX or TX)
+
+    }
+    
+    public void init(){
+        init433();
+        initTxContinuous();
+    }
+
+    private void configureGDO(int gdo0, int gdoInput) {
+        byte[] command = {'p', 'i', 'n', (byte) gdo0, (byte) gdoInput}; // Replace with your actual command
+        byte[] response = USBService.sendCommand(command, 1000);
+    }
+
+    public void setFrequency(byte freq2, byte freq1, byte freq0){
+        writeReg(CC1101_FREQ2, freq2);
+        writeReg(CC1101_FREQ1, freq1);
+        writeReg(CC1101_FREQ0, freq0);
+    }
+
+    public void setGDO(byte gdo2, byte gdo1, byte gdo0){
+        writeReg(CC1101_IOCFG2, gdo2);
+        writeReg(CC1101_IOCFG1, gdo1);
+        writeReg(CC1101_IOCFG0, gdo0);
+    }
 
 
 }

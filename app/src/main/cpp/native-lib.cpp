@@ -45,14 +45,19 @@ JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_setBuffer(JNIEnv *en
 JNIEXPORT void JNICALL Java_com_emwaver_ismwaver_USBService_storeBulkPkt(JNIEnv *env, jobject serialService, jbyteArray data) {
     jbyte* bufferPtr = env->GetByteArrayElements(data, nullptr);
     jsize lengthOfArray = env->GetArrayLength(data);
-
-    g_currentBufferPtr->clear(); // Clear the buffer before inserting new data
-    g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
-    env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
-    if (g_currentBufferPtr == &commandBuffer) {
+    // Check if g_currentBufferPtr points to dataBuffer
+    if (g_currentBufferPtr == &dataBuffer) {
+        // If pointing to dataBuffer, append the data without clearing
+        g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
+    } else if (g_currentBufferPtr == &commandBuffer) {
+        // If pointing to commandBuffer, clear the buffer before inserting new data
+        g_currentBufferPtr->clear();
+        g_currentBufferPtr->insert(g_currentBufferPtr->end(), bufferPtr, bufferPtr + lengthOfArray);
         isNewCommandAvailable = true; // Set the flag indicating a new command is available
     }
+    env->ReleaseByteArrayElements(data, bufferPtr, JNI_ABORT);
 }
+
 JNIEXPORT jint JNICALL Java_com_emwaver_ismwaver_USBService_getCommandBufferLength(JNIEnv *env, jobject) {
     return static_cast<jint>(commandBuffer.size());
 }

@@ -255,12 +255,12 @@ public class USBService extends Service implements SerialInputOutputManager.List
         return START_STICKY;
     }
 
-    public byte[] sendCommandAndGetResponse(byte[] command, long timeoutMillis) {
+    public byte[] sendCommand(byte[] command, long timeoutMillis) {
         // Send the command
-        Log.i("beforeCommand", ""+System.nanoTime());
+        //Log.i("beforeCommand", ""+System.nanoTime());
         write(command);
         long startTime = System.currentTimeMillis(); // Start time for timeout
-        Log.i("startTime", ""+System.nanoTime());
+        //Log.i("startTime", ""+System.nanoTime());
         // Continuously check for a new command with timeout
         byte[] response;
         while (true) {
@@ -273,8 +273,9 @@ public class USBService extends Service implements SerialInputOutputManager.List
                 return null; // Timeout occurred
             }
         }
-        Log.i("endTime", ""+System.nanoTime());
-
+        //Log.i("endTime", ""+System.nanoTime());
+        String strDefaultCharset = new String(response);
+        Log.i("String Response", strDefaultCharset);
         // Return the response
         return response;
     }

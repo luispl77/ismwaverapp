@@ -511,7 +511,7 @@ public class RawModeFragment extends Fragment {
         float[] timeValues = (float[]) result[0];
         float[] dataValues = (float[]) result[1];
 
-        Log.i("compressed", dataValues.length + " values");
+        //Log.i("compressed", dataValues.length + " values");
 
         List<Entry> entries = new ArrayList<>();
         for (int i = 0; i < timeValues.length; i++) {
