@@ -180,7 +180,7 @@ public class PacketModeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 new Thread(() -> {
-                    cc.sendInit();
+                    cc.initTx();
                     showToastOnUiThread("check console");
                 }).start();
             }
@@ -190,7 +190,7 @@ public class PacketModeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 new Thread(() -> {
-                    cc.sendInitRx();
+                    cc.initRx();
                     showToastOnUiThread("check console");
                 }).start();
             }

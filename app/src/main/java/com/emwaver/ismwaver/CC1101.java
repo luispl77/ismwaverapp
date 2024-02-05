@@ -113,13 +113,13 @@ public class CC1101 {
     public static final byte READ_BURST = (byte)0xC0;
     public static final byte BYTES_IN_RXFIFO = 0x7F;            //byte number in RXfifo mask
 
-    private static final int GDO_INPUT = 0;
+    public static final int GDO_INPUT = 0;
 
-    private static final int GDO_OUTPUT = 1;
+    public static final int GDO_OUTPUT = 1;
 
-    private static final int GDO_0 = 0;
+    public static final int GDO_0 = 0;
 
-    private static final int GDO_2 = 1;
+    public static final int GDO_2 = 1;
 
 
     public CC1101(USBService USBService) {
@@ -168,11 +168,12 @@ public class CC1101 {
     public void writeReg(byte addr, byte data){
         byte [] command = new byte[3];
         byte [] response = new byte[1];
+        byte [] address = {addr};
         command[0] = '!'; //write reg character
         command[1] = addr; //single write ![addr][data]
         command[2] = data;
         response = USBService.sendCommand(command, 1000);
-        Log.i("writeReg", Arrays.toString(response));  //response is the reading at that register
+        Log.i("writeReg", Utils.bytesToHexString(address) + ", " + Utils.bytesToHexString(response));  //response is the reading at that register
     }
     public void sendData(byte [] txBuffer, int size, int t) {
         writeBurstReg(CC1101_TXFIFO, txBuffer, (byte) size);     //write data to send
@@ -202,27 +203,7 @@ public class CC1101 {
             return null;
         }
     }
-    public void sendInit(){
-        byte[] command = {'t', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-        if (response != null) {
-            Log.i("Command Response", Arrays.toString(response));
-        }
-    }
-    public void sendInitRx(){
-        byte[] command = {'r', 'x', 'i', 'n', 'i', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-        if (response != null) {
-            Log.i("Command Response", Arrays.toString(response));
-        }
-    }
-    public void sendInitRxContinuous(){
-        byte[] command = {'r', 'x', 'c', 'o', 'n', 't'}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-        if (response != null) {
-            Log.i("Command Response", Arrays.toString(response));
-        }
-    }
+
     public boolean setDataRate(int bitRate) {
         // Constants for the DRATE register calculation
         final double F_OSC = 26_000_000; // Oscillator frequency in Hz
@@ -492,7 +473,7 @@ public class CC1101 {
 
     }
 
-    void init433() {
+    public void init433() {
         writeReg(CC1101_FSCAL3, (byte) 0xE9); //default values except bit 5 which is 1. should not matter as it is a enable that is already bigger than 1 without this bit
         writeReg(CC1101_FSCAL2, (byte) 0x2A); //frequency synth enable bit is ON (different from default) result and override value
         writeReg(CC1101_FSCAL1, (byte) 0x00); //calibration result
@@ -506,7 +487,7 @@ public class CC1101 {
         setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
     }
 
-    void initRxContinuous() {
+    public void initRxContinuous() {
         writeReg(CC1101_PKTCTRL0, (byte) 0x32); // async serial mode (packet engine is off)
         setGDO((byte) 0x0D, (byte) 0x2E, (byte) 0x0D);
         init433();
@@ -620,9 +601,10 @@ public class CC1101 {
         initTxContinuous();
     }
 
-    private void configureGDO(int gdo0, int gdoInput) {
+    public void configureGDO(int gdo0, int gdoInput) {
         byte[] command = {'p', 'i', 'n', (byte) gdo0, (byte) gdoInput}; // Replace with your actual command
         byte[] response = USBService.sendCommand(command, 1000);
+        Log.i("configureGDO", gdo0 + ", " + Utils.bytesToHexString(response));  //response is the reading at that register
     }
 
     public void setFrequency(byte freq2, byte freq1, byte freq0){

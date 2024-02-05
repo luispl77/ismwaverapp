@@ -116,8 +116,7 @@ public class RawModeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 new Thread(() -> {
-                    cc.sendInitRxContinuous();
-                    //showToastOnUiThread("check console");
+                    cc.initRxContinuous();
                 }).start();
             }
         });
@@ -127,6 +126,9 @@ public class RawModeFragment extends Fragment {
             USBService.setBuffer(Constants.COMMAND_BUFFER); //transmit
             Toast.makeText(getContext(), "Buffer Length: " + bufferLength, Toast.LENGTH_SHORT).show();
 
+            cc.init433();
+            cc.initTxContinuous();
+            cc.configureGDO(CC1101.GDO_0, CC1101.GDO_OUTPUT);
             transmitBuffer();
 
         });
@@ -445,6 +447,7 @@ public class RawModeFragment extends Fragment {
         return bufferStatus;
     }
     private void sendStartTransmissionCommand(int size) {
+
         // Convert "tran" string to bytes
         String contCommand = "tran";
         byte[] commandBytes = contCommand.getBytes();

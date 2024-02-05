@@ -274,8 +274,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
             }
         }
         //Log.i("endTime", ""+System.nanoTime());
-        String strDefaultCharset = new String(response);
-        Log.i("String Response", strDefaultCharset);
         // Return the response
         return response;
     }
