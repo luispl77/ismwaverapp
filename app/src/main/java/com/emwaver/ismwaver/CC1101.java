@@ -619,5 +619,12 @@ public class CC1101 {
         writeReg(CC1101_IOCFG0, gdo0);
     }
 
+    public byte[] getRegisterPacket(){
+        byte[] command = {'s', 't', 'a', 't', 'u', 's'}; // Replace with your actual command
+        byte[] response = USBService.sendCommand(command, 1000);
+        Log.i("getRegisterPacket", toHexStringWithHexPrefix(response));  //response is the reading at that register
+        return response;
+    }
+
 
 }
