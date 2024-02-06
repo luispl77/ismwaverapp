@@ -25,10 +25,14 @@
         android:padding="8dp"
         android:text="Detailed information about the configuration."/>
 
-    <EditText
-        android:id="@+id/configurationEditText"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/editTextContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Edit Configuration"
-        android:padding="8dp"/>
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:padding="8dp">
+        <!-- EditText views will be added here dynamically -->
+    </LinearLayout>
+
 </LinearLayout>
