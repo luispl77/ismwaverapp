@@ -18,12 +18,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 
 import com.emwaver.ismwaver.CC1101;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
 
 import java.util.List;
+import java.util.Locale;
 
 public class OverviewFragment extends Fragment {
 
@@ -72,12 +74,15 @@ public class OverviewFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 registerPacket = cc.getRegisterPacket();
+                adapter.updateAccordionSettings(registerPacket);
             }
         });
 
 
         return root;
     }
+
+
 
     public void onStart() {
         super.onStart();

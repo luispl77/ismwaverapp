@@ -1,6 +1,7 @@
 package com.emwaver.ismwaver.ui.overview;
 
 import android.content.Context;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -18,10 +19,13 @@ import com.emwaver.ismwaver.R;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 public class AccordionAdapter extends RecyclerView.Adapter<AccordionAdapter.ViewHolder> {
 
     private final SparseBooleanArray expandState = new SparseBooleanArray();
+
+    private ViewHolder viewHolder;
 
     // Titles and descriptions are hardcoded
     private final String[] titles = {"Frequency", "Modulation", "Power", "Bandwidth", "Gain", "Packet Settings", "GPIO"};
@@ -53,6 +57,7 @@ public class AccordionAdapter extends RecyclerView.Adapter<AccordionAdapter.View
         String title = titles[position];
         holder.titleTextView.setText(title);
         holder.detailTextView.setText(descriptions[position]);
+        viewHolder = holder;
 
         // Clear existing views in the container
         holder.editTextContainer.removeAllViews();
@@ -103,6 +108,11 @@ public class AccordionAdapter extends RecyclerView.Adapter<AccordionAdapter.View
     private void addLabeledEditText(LinearLayout container, String label, String hintText) {
         Context context = container.getContext();
 
+        // Simplify the label for tag creation by removing details in parentheses and spaces
+        String simplifiedLabel = label.replaceAll("\\s+\\(.*?\\)$", "").replace(" ", "");
+        String editTextTag = simplifiedLabel + "EditText";
+        Log.i("editTextTag", editTextTag);
+
         // Create and add the label TextView
         TextView textView = new TextView(context);
         textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -110,10 +120,22 @@ public class AccordionAdapter extends RecyclerView.Adapter<AccordionAdapter.View
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16); // Example text size, adjust as needed
         container.addView(textView);
 
+        // Check if the EditText already exists
+        View existingView = container.findViewWithTag(editTextTag);
+        if (existingView != null) {
+            // The EditText already exists, so we don't need to add a new one
+            Log.i("addLabeledEditText", "EditText with tag " + editTextTag + " already exists.");
+            return;
+        }
+
         // Create and add the EditText
         EditText editText = new EditText(context);
         editText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         editText.setHint(hintText);
+        // Generate an ID and set a tag for the EditText
+        editText.setId(View.generateViewId());
+        editText.setTag(simplifiedLabel.replace(" ", "") + "EditText");
+
         container.addView(editText);
     }
 
@@ -135,6 +157,27 @@ public class AccordionAdapter extends RecyclerView.Adapter<AccordionAdapter.View
             editTextContainer = itemView.findViewById(R.id.editTextContainer);
         }
     }
+
+    public void updateAccordionSettings(byte [] registerPacket){
+        int freq2 = registerPacket[7] & 0xFF;
+        int freq1 = registerPacket[8] & 0xFF;
+        int freq0 = registerPacket[9] & 0xFF;
+
+        // Convert the frequency bytes to a single integer
+        long frequency = ((freq2 << 16) | (freq1 << 8) | freq0);
+        // Assuming the oscillator frequency is 26 MHz
+        double fOsc = 26e6; // 26 MHz
+        double frequencyMHz = frequency * (fOsc / Math.pow(2, 16)) / 1e6; // Convert to MHz
+        Log.i("frequencyMHz", ""+frequencyMHz);
+
+        EditText frequencyEditText = viewHolder.editTextContainer.findViewWithTag("CenterFrequencyEditText");
+        if (frequencyEditText != null) {
+            frequencyEditText.setText(String.format(Locale.getDefault(), "%.6f", frequencyMHz));
+        }
+    }
+
+
+
 
 }
 
