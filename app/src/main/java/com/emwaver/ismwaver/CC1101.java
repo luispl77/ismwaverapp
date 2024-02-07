@@ -274,6 +274,14 @@ public class CC1101 {
         // Assuming writeReg method exists and returns a boolean indicating success
         return readReg(CC1101_MDMCFG2) == currentValue;
     }
+
+    public int getModulation(){
+        int mdmcfg2 = readReg(CC1101_MDMCFG2) & 0xFF; // Replace 10 with the actual index of MDMCFG2 in registerPacket
+        int modulationSetting = (mdmcfg2 >> 4) & 0x07; // Shift right by 4 bits and mask out everything but bits 6:4
+        Log.i("modulationSetting", ""+modulationSetting);
+        return modulationSetting;
+    }
+
     public String toHexStringWithHexPrefix(byte[] array) {
         StringBuilder hexString = new StringBuilder("[");
         for (int i = 0; i < array.length; i++) {
@@ -611,6 +619,20 @@ public class CC1101 {
         writeReg(CC1101_FREQ2, freq2);
         writeReg(CC1101_FREQ1, freq1);
         writeReg(CC1101_FREQ0, freq0);
+    }
+
+    public double getFrequency(){
+        int freq2 = readReg(CC1101_FREQ2) & 0xFF;
+        int freq1 = readReg(CC1101_FREQ1) & 0xFF;
+        int freq0 = readReg(CC1101_FREQ0) & 0xFF;
+
+        // Convert the frequency bytes to a single integer
+        long frequency = ((freq2 << 16) | (freq1 << 8) | freq0);
+        // Assuming the oscillator frequency is 26 MHz
+        double fOsc = 26e6; // 26 MHz
+        double frequencyMHz = frequency * (fOsc / Math.pow(2, 16)) / 1e6; // Convert to MHz
+        Log.i("frequencyMHz", ""+frequencyMHz);
+        return frequencyMHz;
     }
 
     public void setGDO(byte gdo2, byte gdo1, byte gdo0){

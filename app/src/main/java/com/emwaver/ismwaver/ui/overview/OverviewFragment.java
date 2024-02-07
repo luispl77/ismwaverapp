@@ -67,10 +67,6 @@ public class OverviewFragment extends Fragment {
         binding = FragmentOverviewBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        //binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        //adapter = new AccordionAdapter();
-        //binding.recyclerView.setAdapter(adapter);
-
         binding.frequencyHeader.setOnClickListener(v -> {
             // Toggle visibility
             binding.frequencyContent.setVisibility( binding.frequencyContent.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
@@ -112,9 +108,7 @@ public class OverviewFragment extends Fragment {
         binding.getRegsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                registerPacket = cc.getRegisterPacket();
-                //adapter.updateAccordionSettings(registerPacket);
-                updateAccordionSettings(registerPacket);
+                updateAccordionSettings();
             }
         });
 
@@ -122,37 +116,11 @@ public class OverviewFragment extends Fragment {
         return root;
     }
 
-    public void updateAccordionSettings(byte [] registerPacket){
-        int freq2 = registerPacket[7] & 0xFF;
-        int freq1 = registerPacket[8] & 0xFF;
-        int freq0 = registerPacket[9] & 0xFF;
-
-        // Convert the frequency bytes to a single integer
-        long frequency = ((freq2 << 16) | (freq1 << 8) | freq0);
-        // Assuming the oscillator frequency is 26 MHz
-        double fOsc = 26e6; // 26 MHz
-        double frequencyMHz = frequency * (fOsc / Math.pow(2, 16)) / 1e6; // Convert to MHz
-        Log.i("frequencyMHz", ""+frequencyMHz);
+    public void updateAccordionSettings(){
+        double frequencyMHz = cc.getFrequency();
         binding.frequencyEditText.setText(String.format(Locale.getDefault(), "%.6f", frequencyMHz));
-
-        // Extract modulation setting from MDMCFG2
-        int mdmcfg2 = registerPacket[12] & 0xFF; // Replace 10 with the actual index of MDMCFG2 in registerPacket
-        int modulationSetting = (mdmcfg2 >> 4) & 0x07; // Shift right by 4 bits and mask out everything but bits 6:4
-        Log.i("modulationSetting", ""+modulationSetting);
-        String modulation;
-        switch (modulationSetting) {
-            case 0:
-                modulation = "FSK";
-                break;
-            case 3:
-                modulation = "ASK";
-                break;
-            default:
-                modulation = "Unknown"; // Handle other cases or set a default value
-                break;
-        }
-        binding.modulationEditText.setText(modulation);
-
+        int modulation = cc.getModulation();
+        binding.modulationEditText.setText(modulation == 0 ? "FSK" : "ASK");
     }
 
 
