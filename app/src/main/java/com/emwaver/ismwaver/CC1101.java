@@ -120,11 +120,11 @@ public class CC1101 {
     public static final int GDO_0 = 0;
 
     public static final int GDO_2 = 1;
-
-
     public CC1101(USBService USBService) {
         this.USBService = USBService;
     }
+
+
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];
         byte[] response;
@@ -253,6 +253,120 @@ public class CC1101 {
             return false;
         }
     }
+    public int getDataRate() {
+        // Constants for the DRATE register calculation
+        final double F_OSC = 26_000_000; // Oscillator frequency in Hz
+
+        // Read the DRATE_E from the MDMCFG4 register's lower nibble
+        byte mdmcfg4Value = readReg(CC1101_MDMCFG4);
+        int drateE = mdmcfg4Value & 0x0F;
+
+        // Read the DRATE_M from the MDMCFG3 register
+        byte mdmcfg3Value = readReg(CC1101_MDMCFG3);
+        int drateM = mdmcfg3Value & 0xFF;
+
+        // Calculate the bit rate using the formula
+        double bitRate = ((256 + drateM) * Math.pow(2, drateE) * F_OSC) / Math.pow(2, 28);
+
+        return (int) Math.round(bitRate);
+    }
+
+    public boolean setPktLength(int length){
+        byte pktlen = (byte)length;
+        writeReg(CC1101_PKTLEN, pktlen);
+        //verify
+        return readReg(CC1101_PKTLEN) == pktlen;
+    }
+    public int getPktLength(){
+        return readReg(CC1101_PKTLEN);
+    }
+
+    public int getPacketFormat() {
+        // Read the value of the PKTCTRL0 register
+        byte pktctrl0Value = readReg(CC1101_PKTCTRL0);
+
+        int packetFormat = (pktctrl0Value >> 4) & 0x03;
+
+        // Return the PKT_FORMAT value
+        return packetFormat;
+    }
+    public boolean setPacketFormat(int format) {
+        byte PKT_FORMAT_MASK = (byte) 0xCF;
+        if (format < 0 || format > 3) {
+            return false; // Return false if the format is out of range
+        }
+        byte currentRegValue = readReg(CC1101_PKTCTRL0);
+        currentRegValue &= PKT_FORMAT_MASK;
+        byte newRegValue = (byte) (currentRegValue | (format << 4));
+        writeReg(CC1101_PKTCTRL0, newRegValue);
+        byte verifyRegValue = readReg(CC1101_PKTCTRL0);
+        // Check if the written value matches the read value for the PKT_FORMAT bits
+        return (verifyRegValue & ~PKT_FORMAT_MASK) == (newRegValue & ~PKT_FORMAT_MASK);
+    }
+
+    public boolean setPowerLevel(int powerLevel) {
+        byte powerSetting;
+        switch (powerLevel) {
+            case -30:
+                powerSetting = 0x12;
+                break;
+            case -20:
+                powerSetting = 0x0D; // Use 0x0E for 433 MHz
+                break;
+            case -15:
+                powerSetting = 0x1C; // Use 0x1D for 433 MHz
+                break;
+            case -10:
+                powerSetting = 0x34;
+                break;
+            case 0:
+                powerSetting = 0x51; // Use 0x60 for 433 MHz
+                break;
+            case 5:
+                powerSetting = (byte)0x85; // Use 0x84 for 433 MHz
+                break;
+            case 7:
+                powerSetting = (byte)0xCB; // Use 0xC8 for 433 MHz
+                break;
+            case 10:
+                powerSetting = (byte)0xC2; // Use 0xC0 for 433 MHz
+                break;
+            default:
+                return false; // Invalid power level
+        }
+        // Write the power setting to the PA_TABLE
+        writeReg(CC1101_PATABLE, powerSetting);
+        // Verify that the write was successful
+        byte readBack = readReg(CC1101_PATABLE);
+        return powerSetting == readBack;
+    }
+    public int getPowerLevel() {
+        // Read the current power setting from the PA_TABLE
+        byte currentSetting = readReg(CC1101_PATABLE);
+
+        // Match the read setting to the power level
+        switch (currentSetting) {
+            case 0x12:
+                return -30;
+            case 0x0D: // Use 0x0E for 433 MHz
+                return -20;
+            case 0x1C: // Use 0x1D for 433 MHz
+                return -15;
+            case 0x34:
+                return -10;
+            case 0x51: // Use 0x60 for 433 MHz
+                return 0;
+            case (byte)0x85: // Use 0x84 for 433 MHz
+                return 5;
+            case (byte)0xCB: // Use 0xC8 for 433 MHz
+                return 7;
+            case (byte)0xC2: // Use 0xC0 for 433 MHz
+                return 10;
+            default:
+                return Integer.MIN_VALUE; // Indicates an unrecognized power level
+        }
+    }
+
     public boolean setModulation(byte modulation) {
         // Read the current register value
         byte currentValue = readReg(CC1101_MDMCFG2);
@@ -274,7 +388,6 @@ public class CC1101 {
         // Assuming writeReg method exists and returns a boolean indicating success
         return readReg(CC1101_MDMCFG2) == currentValue;
     }
-
     public int getModulation(){
         int mdmcfg2 = readReg(CC1101_MDMCFG2) & 0xFF; // Replace 10 with the actual index of MDMCFG2 in registerPacket
         int modulationSetting = (mdmcfg2 >> 4) & 0x07; // Shift right by 4 bits and mask out everything but bits 6:4
@@ -282,57 +395,60 @@ public class CC1101 {
         return modulationSetting;
     }
 
-    public String toHexStringWithHexPrefix(byte[] array) {
-        StringBuilder hexString = new StringBuilder("[");
-        for (int i = 0; i < array.length; i++) {
-            // Convert the byte to a hex string with a leading zero, then take the last two characters
-            // (in case of negative bytes, which result in longer hex strings)
-            String hex = "0x" + Integer.toHexString(array[i] & 0xFF).toUpperCase();
+    public boolean setBandwidth(double bandwidth) {
+        // Constants for the register calculation
+        final double F_XTAL = 26_000_000.0; // Crystal frequency in Hz
+        final double F_IF = 100_000.0; // Intermediate frequency in Hz
+        final double f_bw = bandwidth * 1e3; // Convert bandwidth to Hz
 
-            hexString.append(hex);
-
-            // Append comma and space if this is not the last byte
-            if (i < array.length - 1) {
-                hexString.append(", ");
-            }
+        // Calculate the bandwidth exponent (bw_exp)
+        int bw_exp = 0;
+        while (bw_exp <= 15 && (F_XTAL / (8 * (bw_exp + 2) * F_IF)) >= f_bw) {
+            bw_exp++;
         }
-        hexString.append("]");
-        return hexString.toString();
-    }
-    public boolean setManchesterEncoding(boolean manchester){
-        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
-        //bit 3 is the manchester encoding bit
-        if(manchester){
-            mdmcfg2 |= 0b00001000;
+
+        if (bw_exp > 15) {
+            // Bandwidth is too low for this radio configuration
+            return false;
         }
-        else{
-            mdmcfg2 &= 0b11110111;
+
+        // Calculate the bandwidth mantissa (bw_mant)
+        double bw_mant = (F_XTAL / (8 * (bw_exp + 2) * F_IF)) / f_bw;
+        int bw_mant_int = (int) bw_mant;
+        if (bw_mant_int % 2 != 0) {
+            // Round up to the nearest even number
+            bw_mant_int++;
         }
-        writeReg(CC1101_MDMCFG2, mdmcfg2);
-        //verify
-        return readReg(CC1101_MDMCFG2) == mdmcfg2;
+
+        // Combine bw_exp and bw_mant to form the register value
+        byte combinedValue = (byte) ((bw_exp << 4) | (bw_mant_int & 0x0F));
+
+        // Write the combined value to the appropriate register
+        writeReg((byte) CC1101_MDMCFG4, combinedValue);
+
+        // Verify the write operation
+        byte confirmValue = readReg((byte) CC1101_MDMCFG4);
+        return confirmValue == combinedValue;
     }
-    public boolean setSyncMode(byte syncmode){
-        // Read the current register value
-        byte currentValue = readReg(CC1101_MDMCFG2);
+    public double getBandwidth() {
+        // Constants for the register calculation
+        final double F_XTAL = 26_000_000.0; // Crystal frequency in Hz
+        final double F_IF = 100_000.0; // Intermediate frequency in Hz
 
-        Log.i("MDMCFG2", "current value: " + currentValue);
+        // Read the value from the MDMCFG4 register
+        byte registerValue = readReg((byte) CC1101_MDMCFG4);
 
-        byte mask = 0b00000111; // Mask for the sync mode bits (bit 0, 1, 2)
-        currentValue &= ~mask; // Clear the sync bits
+        // Extract the bandwidth exponent (bw_exp) and mantissa (bw_mant) from the register value
+        int bw_exp = (registerValue >> 4) & 0x0F;
+        int bw_mant = registerValue & 0x0F;
 
-        // Set the new sync bits
-        // Assuming that the 'sync' argument is already just the 3 bits needed
+        // Calculate the bandwidth in kHz using the reverse formula
+        double bandwidth = (F_XTAL / (8 * (bw_exp + 2) * F_IF)) / (bw_mant + 8);
 
-        currentValue |= (syncmode); // Combine the new modulation bits with the current value
-
-        Log.i("MDMCFG2", "modified value: " + currentValue);
-        // Write the new value back to the register
-        writeReg(CC1101_MDMCFG2, currentValue);
-
-        // Assuming writeReg method exists and returns a boolean indicating success
-        return readReg(CC1101_MDMCFG2) == currentValue;
+        return bandwidth;
     }
+
+
     public boolean setDeviation(int deviation) {
         // Constants for the DEVIATN register calculation
         final double F_OSC = 26_000_000; // Oscillator frequency in Hz
@@ -376,13 +492,147 @@ public class CC1101 {
             return false;
         }
     }
-    public boolean setNumPreambleBytes(int num){
-        byte mdmcfg1 = (byte)(num << 4);
+    public double getDeviation() {
+        // Constants for the DEVIATN register calculation
+        final double F_OSC = 26_000_000; // Oscillator frequency in Hz
+        final int DEVIATION_M_MAX = 7; // 3-bit DEVIATION_M has max value 7
+        final int DEVIATION_E_MAX = 7; // 3-bit DEVIATION_E has max value 7
 
-        writeReg(CC1101_MDMCFG1, mdmcfg1);
-        //verify
-        return readReg(CC1101_MDMCFG1) == mdmcfg1;
+        // Read the value from the DEVIATN register
+        byte deviationValue = readReg((byte)CC1101_DEVIATN);
+
+        // Extract DEVIATION_M and DEVIATION_E from the combined value
+        int deviationM = deviationValue & 0x07;
+        int deviationE = (deviationValue >> 4) & 0x07;
+
+        // Calculate the deviation in kHz using the same formula as in setDeviation
+        double deviation = ((8 + deviationM) * Math.pow(2, deviationE)) * (F_OSC / Math.pow(2, 17));
+
+        return deviation;
     }
+
+
+    public boolean setManchesterEncoding(boolean manchester){
+        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
+        //bit 3 is the manchester encoding bit
+        if(manchester){
+            mdmcfg2 |= 0b00001000;
+        }
+        else{
+            mdmcfg2 &= 0b11110111;
+        }
+        writeReg(CC1101_MDMCFG2, mdmcfg2);
+        //verify
+        return readReg(CC1101_MDMCFG2) == mdmcfg2;
+    }
+    public boolean getManchesterEncoding() {
+        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
+        // Bit 3 is the Manchester encoding bit, mask it with 0b00001000
+        return (mdmcfg2 & 0b00001000) != 0;
+    }
+
+    public boolean setSyncMode(byte syncmode){
+        // Read the current register value
+        byte currentValue = readReg(CC1101_MDMCFG2);
+
+        Log.i("MDMCFG2", "current value: " + currentValue);
+
+        byte mask = 0b00000111; // Mask for the sync mode bits (bit 0, 1, 2)
+        currentValue &= ~mask; // Clear the sync bits
+
+        // Set the new sync bits
+        // Assuming that the 'sync' argument is already just the 3 bits needed
+
+        currentValue |= (syncmode); // Combine the new modulation bits with the current value
+
+        Log.i("MDMCFG2", "modified value: " + currentValue);
+        // Write the new value back to the register
+        writeReg(CC1101_MDMCFG2, currentValue);
+
+        // Assuming writeReg method exists and returns a boolean indicating success
+        return readReg(CC1101_MDMCFG2) == currentValue;
+    }
+    public byte getSyncMode() {
+        // Read the current register value
+        byte currentValue = readReg(CC1101_MDMCFG2);
+
+        // Log the current value if needed
+        // Log.i("MDMCFG2", "current value: " + currentValue);
+
+        byte mask = 0b00000111; // Mask for the sync mode bits (bit 0, 1, 2)
+        byte syncMode = (byte) (currentValue & mask); // Isolate the sync mode bits
+
+        return syncMode;
+    }
+
+    public boolean setPreambleLength(int numBytes) {
+        // Map the number of preamble bytes to the corresponding setting value
+        int setting;
+        switch (numBytes) {
+            case 2:
+                setting = 0;
+                break;
+            case 3:
+                setting = 1;
+                break;
+            case 4:
+                setting = 2;
+                break;
+            case 6:
+                setting = 3;
+                break;
+            case 8:
+                setting = 4;
+                break;
+            case 12:
+                setting = 5;
+                break;
+            case 16:
+                setting = 6;
+                break;
+            case 24:
+                setting = 7;
+                break;
+            default:
+                return false; // Invalid number of preamble bytes
+        }
+        // Shift the setting into the correct position (bits 6:4)
+        byte mdmcfg1Value = (byte) (setting << 4);
+        // Write the value to the register
+        writeReg(CC1101_MDMCFG1, mdmcfg1Value);
+        // Verify that the register was set correctly
+        return (readReg(CC1101_MDMCFG1) & 0x70) == mdmcfg1Value;
+    }
+    public int getPreambleLength() {
+        // Read the register value
+        byte mdmcfg1Value = readReg(CC1101_MDMCFG1);
+
+        // Isolate the preamble setting bits (bits 6:4) and shift them to the LSB
+        int setting = (mdmcfg1Value & 0x70) >> 4;
+
+        // Map the setting value back to the number of preamble bytes
+        switch (setting) {
+            case 0:
+                return 2;
+            case 1:
+                return 3;
+            case 2:
+                return 4;
+            case 3:
+                return 6;
+            case 4:
+                return 8;
+            case 5:
+                return 12;
+            case 6:
+                return 16;
+            case 7:
+                return 24;
+            default:
+                return -1; // Indicate an error if the setting is out of range
+        }
+    }
+
     public boolean setSyncWord(byte[] syncword) {
         if (syncword == null || syncword.length != 2) {
             // Invalid input: Sync word must be exactly 2 bytes long
@@ -397,12 +647,12 @@ public class CC1101 {
         // Compare the written sync word with the read back value
         return Arrays.equals(syncword, readBack);
     }
-    public boolean setPktLength(int length){
-        byte pktlen = (byte)length;
-        writeReg(CC1101_PKTLEN, pktlen);
-        //verify
-        return readReg(CC1101_PKTLEN) == pktlen;
+    public byte[] getSyncWord() {
+        // Read the sync word from the CC1101_SYNC1 and CC1101_SYNC0 addresses
+        return readBurstReg(CC1101_SYNC1, (byte) 2);
     }
+
+
     public boolean getGDO() {
         byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
         byte[] response = USBService.sendCommand(command, 1000);
@@ -641,11 +891,22 @@ public class CC1101 {
         writeReg(CC1101_IOCFG0, gdo0);
     }
 
-    public byte[] getRegisterPacket(){
-        byte[] command = {'s', 't', 'a', 't', 'u', 's'}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-        Log.i("getRegisterPacket", toHexStringWithHexPrefix(response));  //response is the reading at that register
-        return response;
+    public String toHexStringWithHexPrefix(byte[] array) {
+        StringBuilder hexString = new StringBuilder("[");
+        for (int i = 0; i < array.length; i++) {
+            // Convert the byte to a hex string with a leading zero, then take the last two characters
+            // (in case of negative bytes, which result in longer hex strings)
+            String hex = "0x" + Integer.toHexString(array[i] & 0xFF).toUpperCase();
+
+            hexString.append(hex);
+
+            // Append comma and space if this is not the last byte
+            if (i < array.length - 1) {
+                hexString.append(", ");
+            }
+        }
+        hexString.append("]");
+        return hexString.toString();
     }
 
 

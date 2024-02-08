@@ -276,7 +276,7 @@ public class PacketModeFragment extends Fragment {
         binding.preambleSelector.setOnItemClickListener((parent, view, position, id) -> {
             new Thread(() -> {
                 // Handle the selection based on index
-                if(cc.setNumPreambleBytes(position)) {
+                if(cc.setPreambleLength(position)) {
                     showToastOnUiThread("Preamble set successfully to index " + position);
                 } else {
                     showToastOnUiThread("Failed to set preamble");

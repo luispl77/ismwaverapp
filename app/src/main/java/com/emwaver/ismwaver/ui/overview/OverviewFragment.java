@@ -23,6 +23,7 @@ import android.widget.TextView;
 
 import com.emwaver.ismwaver.CC1101;
 import com.emwaver.ismwaver.USBService;
+import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
 
 import java.util.List;
@@ -34,10 +35,8 @@ public class OverviewFragment extends Fragment {
     private FragmentOverviewBinding binding;
     private USBService USBService;
     private boolean isServiceBound = false;
-
-    private byte[] registerPacket;
     private CC1101 cc;
-    private AccordionAdapter adapter;
+
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -46,7 +45,6 @@ public class OverviewFragment extends Fragment {
             USBService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            //updateChart(compressDataAndGetDataSet(0, USBService.getBufferLength(), 1000));
             cc = new CC1101(USBService);
         }
         @Override
@@ -101,10 +99,6 @@ public class OverviewFragment extends Fragment {
         });
 
 
-
-
-
-
         binding.getRegsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -121,8 +115,30 @@ public class OverviewFragment extends Fragment {
         binding.frequencyEditText.setText(String.format(Locale.getDefault(), "%.6f", frequencyMHz));
         int modulation = cc.getModulation();
         binding.modulationEditText.setText(modulation == 0 ? "FSK" : "ASK");
+        int powerLevel = cc.getPowerLevel();
+        binding.powerEditText.setText(""+powerLevel);
+        double bandwidth = cc.getBandwidth();
+        binding.bandwidthEditText.setText(""+bandwidth);
+        double deviation = cc.getDeviation();
+        binding.deviationEditText.setText(""+deviation);
+
+        int datarate = cc.getDataRate();
+        binding.dataRateEditText.setText(""+datarate);
+        int pktformat = cc.getPacketFormat();
+        binding.packetFormatEditText.setText(""+pktformat);
+        int pktlength = cc.getPktLength();
+        binding.packetLengthEditText.setText(""+pktlength);
+        int preamblelength = cc.getPreambleLength();
+        binding.preambleLengthEditText.setText(""+preamblelength);
+        byte[] syncword = cc.getSyncWord();
+        binding.syncWordEditText.setText(Utils.bytesToHexString(syncword));
+        int syncmode = cc.getSyncMode();
+        binding.syncModeEditText.setText(""+syncmode);
     }
 
+    public void updateStatus(){
+        USBService.connectUSBSerial();
+    }
 
 
     public void onStart() {
