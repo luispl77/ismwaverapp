@@ -61,6 +61,15 @@ public class USBService extends Service implements SerialInputOutputManager.List
         }
     }
 
+    public boolean checkConnection(){
+        if(finalPort != null){
+            return ioManager.getState() == SerialInputOutputManager.State.RUNNING;
+        }
+        else{
+            return false;
+        }
+    }
+
     public class LocalBinder extends Binder {
         public USBService getService() {
             // Return this instance of USBService so clients can call public methods
@@ -254,8 +263,13 @@ public class USBService extends Service implements SerialInputOutputManager.List
 
     @Override
     public void onRunError(Exception e) {
-
+        if (e.getMessage() != null && e.getMessage().contains("USB get_status request failed")) {
+            Log.e("onDetached", "USB DEVICE DETATCHED");
+        } else {
+            // Handle other generic errors if needed
+        }
     }
+
 
     // Callback that runs when the service is started. Not useful for now.
     // START_STICKY: If the service is killed by the system, recreate it, but do not redeliver the last intent. Instead, the system calls onStartCommand with a null intent, unless there are pending intents to start the service. This is suitable for services that are continually running in the background (like music playback) and that don't rely on the intent data.

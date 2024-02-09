@@ -1,11 +1,13 @@
 package com.emwaver.ismwaver.ui.overview;
 
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -13,7 +15,9 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +26,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.emwaver.ismwaver.CC1101;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
@@ -36,6 +41,18 @@ public class OverviewFragment extends Fragment {
     private USBService USBService;
     private boolean isServiceBound = false;
     private CC1101 cc;
+    private final Handler handler = new Handler(Looper.getMainLooper()); // Handler on the main UI thread
+    private boolean wasPreviouslyConnected = false;
+
+    private final Runnable checkConnectionTask = new Runnable() {
+        @Override
+        public void run() {
+            Log.i("checkConnectionTask", "checking connection..");
+            updateConnection();
+            handler.postDelayed(this, 3000); // Reschedule for another check in 3 seconds
+
+        }
+    };
 
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
@@ -46,6 +63,8 @@ public class OverviewFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
+            handler.post(checkConnectionTask); // Start periodic updates when the fragment starts
+
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -99,12 +118,6 @@ public class OverviewFragment extends Fragment {
         });
 
 
-        binding.getRegsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateAccordionSettings();
-            }
-        });
 
 
         return root;
@@ -144,12 +157,27 @@ public class OverviewFragment extends Fragment {
         binding.fifoThresholdEditText.setText(""+fifothreshold);
 
 
+
+
     }
 
-    public void updateStatus(){
-        USBService.connectUSBSerial();
-    }
 
+    public void updateConnection(){
+        boolean isConnected = USBService.checkConnection(); // Call your USBService method
+        binding.connectionStatusTextView.setText(isConnected ? "Connected" : "Disconnected");
+        if (isConnected != wasPreviouslyConnected) {
+            if (isConnected) {
+                binding.connectionStatusTextView.setTextColor(Color.GREEN);
+                binding.deviceImageView.setVisibility(View.VISIBLE);
+                updateAccordionSettings();
+            } else {
+                binding.connectionStatusTextView.setTextColor(Color.RED);
+                binding.deviceImageView.setVisibility(View.INVISIBLE);
+            }
+            wasPreviouslyConnected = isConnected;
+        }
+
+    }
 
     public void onStart() {
         super.onStart();
@@ -157,11 +185,25 @@ public class OverviewFragment extends Fragment {
             Intent intent = new Intent(getActivity(), USBService.class);
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
+
+
+
     }
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null; // Important for avoiding memory leaks
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (isServiceBound) {
+            getActivity().unbindService(serviceConnection);
+            isServiceBound = false;
+        }
+        handler.removeCallbacks(checkConnectionTask); // Stop periodic updates when the fragment stops
+        wasPreviouslyConnected = false;
     }
 
 }

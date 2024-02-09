@@ -7,11 +7,14 @@
     tools:context=".ui.overview.OverviewFragment">
 
 
-    <Button
-        android:id="@+id/getRegsButton"
+    <TextView
+        android:id="@+id/connectionStatusTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="regs"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp"
+        android:text="Disconnected"
+        android:textColor="@android:color/holo_red_dark"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -22,6 +25,7 @@
         android:adjustViewBounds="true"
         android:scaleType="centerInside"
         android:src="@drawable/ismwaver"
+        android:visibility="invisible"
 
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -30,8 +34,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/deviceImageView"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/deviceImageView">
 
         <LinearLayout
             android:id="@+id/accordionContainer"
@@ -44,29 +48,29 @@
                 android:id="@+id/frequencyHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Frequency"
                 android:background="?attr/selectableItemBackground"
                 android:padding="16dp"
-                android:textAppearance="@style/TextAppearance.AppCompat.Large"/>
+                android:text="Frequency"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
             <LinearLayout
                 android:id="@+id/frequencyContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:padding="16dp">
+                android:padding="16dp"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="The frequency configuration determines the operating frequency of the device."/>
+                    android:text="The frequency configuration determines the operating frequency of the device." />
 
                 <EditText
+                    android:id="@+id/frequencyEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter frequency in MHz"
-                    android:id="@+id/frequencyEditText"/>
+                    android:hint="Enter frequency in MHz" />
 
                 <!-- Add more EditTexts as needed for the section -->
 
@@ -77,37 +81,37 @@
                 android:id="@+id/modulationHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Modulation"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="Modulation"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/frequencyContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/frequencyContent" />
 
             <LinearLayout
                 android:id="@+id/modulationContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/modulationHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/modulationHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Modulation can be either Amplitude modulation (ASK) or Frequency modulation (FSK)."/>
+                    android:text="Modulation can be either Amplitude modulation (ASK) or Frequency modulation (FSK)." />
 
                 <EditText
+                    android:id="@+id/modulationEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter ASK/FSK"
-                    android:id="@+id/modulationEditText"/>
+                    android:hint="Enter ASK/FSK" />
             </LinearLayout>
 
             <!-- Power Section -->
@@ -115,37 +119,37 @@
                 android:id="@+id/powerHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Power"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="Power"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/modulationContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/modulationContent" />
 
             <LinearLayout
                 android:id="@+id/powerContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/powerHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/powerHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Power level can be a maximum of +12 dBm."/>
+                    android:text="Power level can be a maximum of +12 dBm." />
 
                 <EditText
+                    android:id="@+id/powerEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter power in dBm"
-                    android:id="@+id/powerEditText"/>
+                    android:hint="Enter power in dBm" />
             </LinearLayout>
 
             <!-- Bandwidth Section -->
@@ -153,43 +157,43 @@
                 android:id="@+id/bandwidthHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Bandwidth"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="Bandwidth"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/powerContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/powerContent" />
 
             <LinearLayout
                 android:id="@+id/bandwidthContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/bandwidthHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/bandwidthHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Bandwidth configuration affects noise, range and reception."/>
+                    android:text="Bandwidth configuration affects noise, range and reception." />
 
                 <EditText
+                    android:id="@+id/bandwidthEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter bandwidth in kHz"
-                    android:id="@+id/bandwidthEditText"/>
+                    android:hint="Enter bandwidth in kHz" />
 
                 <EditText
+                    android:id="@+id/deviationEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter deviation in kHz"
-                    android:id="@+id/deviationEditText"/>
+                    android:hint="Enter deviation in kHz" />
             </LinearLayout>
 
             <!-- Gain Section -->
@@ -197,37 +201,37 @@
                 android:id="@+id/gainHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Gain"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="Gain"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/bandwidthContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/bandwidthContent" />
 
             <LinearLayout
                 android:id="@+id/gainContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/gainHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/gainHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Gain affects noise, range and reception."/>
+                    android:text="Gain affects noise, range and reception." />
 
                 <EditText
+                    android:id="@+id/lnaGainEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter LNA Gain in dB"
-                    android:id="@+id/lnaGainEditText"/>
+                    android:hint="Enter LNA Gain in dB" />
 
             </LinearLayout>
 
@@ -237,67 +241,67 @@
                 android:id="@+id/packetSettingsHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Packet Settings"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="Packet Settings"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/gainContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/gainContent" />
 
             <LinearLayout
                 android:id="@+id/packetSettingsContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/packetSettingsHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/packetSettingsHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Packet Settings for Packet Mode."/>
+                    android:text="Packet Settings for Packet Mode." />
 
                 <EditText
+                    android:id="@+id/packetFormatEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Packet Format"
-                    android:id="@+id/packetFormatEditText"/>
+                    android:hint="Enter Packet Format" />
 
                 <EditText
+                    android:id="@+id/packetLengthEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Packet Length in #bytes"
-                    android:id="@+id/packetLengthEditText"/>
+                    android:hint="Enter Packet Length in #bytes" />
 
                 <EditText
+                    android:id="@+id/preambleLengthEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Preamble Length in #bytes"
-                    android:id="@+id/preambleLengthEditText"/>
+                    android:hint="Enter Preamble Length in #bytes" />
 
                 <EditText
+                    android:id="@+id/syncWordEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter 2-byte Sync Word"
-                    android:id="@+id/syncWordEditText"/>
+                    android:hint="Enter 2-byte Sync Word" />
 
                 <EditText
+                    android:id="@+id/syncModeEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Select Sync Mode Detection"
-                    android:id="@+id/syncModeEditText"/>
+                    android:hint="Select Sync Mode Detection" />
 
                 <EditText
+                    android:id="@+id/dataRateEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Data Rate in kbit/s"
-                    android:id="@+id/dataRateEditText"/>
+                    android:hint="Enter Data Rate in kbit/s" />
             </LinearLayout>
 
 
@@ -306,49 +310,49 @@
                 android:id="@+id/gpioHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="GPIO"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="16dp"
+                android:text="GPIO"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                app:layout_constraintTop_toBottomOf="@id/packetSettingsContent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintTop_toBottomOf="@id/packetSettingsContent" />
 
             <LinearLayout
                 android:id="@+id/gpioContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
                 android:padding="16dp"
-                app:layout_constraintTop_toBottomOf="@id/gpioHeader"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                app:layout_constraintTop_toBottomOf="@id/gpioHeader">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="The CC1101 has 2 general purpose pins that can have many different configurations."/>
+                    android:text="The CC1101 has 2 general purpose pins that can have many different configurations." />
 
                 <EditText
+                    android:id="@+id/gpio0EditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Select GPIO 0 function"
-                    android:id="@+id/gpio0EditText"/>
+                    android:hint="Select GPIO 0 function" />
 
                 <EditText
+                    android:id="@+id/gpio2EditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Select GPIO 2 function"
-                    android:id="@+id/gpio2EditText"/>
+                    android:hint="Select GPIO 2 function" />
 
                 <EditText
+                    android:id="@+id/fifoThresholdEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter FIFO Threshold in #bytes"
-                    android:id="@+id/fifoThresholdEditText"/>
+                    android:hint="Enter FIFO Threshold in #bytes" />
             </LinearLayout>
 
         </LinearLayout>
