@@ -7,8 +7,6 @@
     tools:context=".ui.rawmode.RawModeFragment">
 
 
-
-
     <Button
         android:id="@+id/stopRecordingButton"
         android:layout_width="wrap_content"
@@ -22,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="start"
-        app:layout_constraintStart_toEndOf="@+id/connectButton"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
@@ -69,7 +67,7 @@
         app:layout_constraintBottom_toTopOf="@+id/reconstructedSinalEditText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/connectButton" />
+        app:layout_constraintTop_toBottomOf="@+id/startRecordingButton" />
 
     <EditText
         android:id="@+id/reconstructedSinalEditText"
