@@ -108,10 +108,6 @@ public class RawModeFragment extends Fragment {
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 
-        binding.connectButton.setOnClickListener(v -> {
-            USBService.connectUSBSerial();
-            //updateVisibleRange();
-        });
         binding.initContinuousButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

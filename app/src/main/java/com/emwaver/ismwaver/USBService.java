@@ -49,6 +49,18 @@ public class USBService extends Service implements SerialInputOutputManager.List
     public native byte[] getDataBuffer();
     public native void loadDataBuffer(byte[] data);
 
+    public void checkForConnectedDevices() {
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+
+        if (availableDrivers.isEmpty()) {
+            Toast.makeText(this, "no device found..", Toast.LENGTH_SHORT).show();
+            return;
+        }else{
+            connectUSBSerial();
+        }
+    }
+
     public class LocalBinder extends Binder {
         public USBService getService() {
             // Return this instance of USBService so clients can call public methods
@@ -113,9 +125,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
                         Toast.makeText(context, "USB Serial Permission Denied", Toast.LENGTH_SHORT).show();
                     }
                 }
-            }else if (Constants.ACTION_INITIATE_USB_CONNECTION.equals(intent.getAction())) {
-                connectUSBSerial(); // Method to start USB connection process
-
             }
         }
     };
@@ -179,6 +188,8 @@ public class USBService extends Service implements SerialInputOutputManager.List
         port.open(connection);
         port.setParameters(Constants.USB_BAUD_RATE, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
 
+
+
         ioManager = new SerialInputOutputManager(port, this);
         ioManager.start();
 
@@ -226,8 +237,6 @@ public class USBService extends Service implements SerialInputOutputManager.List
         registerReceiver(connectReceiver, filterConnectButton); // Receiver for the connect button in console.
         IntentFilter filter = new IntentFilter(Constants.ACTION_CONNECT_USB_BOOTLOADER);
         registerReceiver(connectReceiver, filter);
-        IntentFilter filterConnection = new IntentFilter(Constants.ACTION_INITIATE_USB_CONNECTION);
-        registerReceiver(connectReceiver, filterConnection);
     }
 
     @Override

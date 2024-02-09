@@ -62,6 +62,24 @@ public class Utils {
         return bytes;
     }
 
+    public static String toHexStringWithHexPrefix(byte[] array) {
+        StringBuilder hexString = new StringBuilder("[");
+        for (int i = 0; i < array.length; i++) {
+            // Convert the byte to a hex string with a leading zero, then take the last two characters
+            // (in case of negative bytes, which result in longer hex strings)
+            String hex = "0x" + Integer.toHexString(array[i] & 0xFF).toUpperCase();
+
+            hexString.append(hex);
+
+            // Append comma and space if this is not the last byte
+            if (i < array.length - 1) {
+                hexString.append(", ");
+            }
+        }
+        hexString.append("]");
+        return hexString.toString();
+    }
+
     public static void changeStatus(String status, Context context) {
         Intent intent = new Intent(Constants.ACTION_UPDATE_STATUS);
         // Convert the message to bytes

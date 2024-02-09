@@ -2,7 +2,6 @@ package com.emwaver.ismwaver;
 
 public class Constants {
     // Action string for the broadcast when connecting USB
-    public static final String ACTION_INITIATE_USB_CONNECTION = "com.emwaver.ACTION_INITIATE_USB_CONNECTION";
     public static final String ACTION_CONNECT_USB = "com.emwaver.ACTION_CONNECT_USB";
     public static final String ACTION_CONNECT_USB_BOOTLOADER = "com.emwaver.GRANT_USB";
 

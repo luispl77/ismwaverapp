@@ -134,6 +134,16 @@ public class OverviewFragment extends Fragment {
         binding.syncWordEditText.setText(Utils.bytesToHexString(syncword));
         int syncmode = cc.getSyncMode();
         binding.syncModeEditText.setText(""+syncmode);
+        double gaindbm = cc.getGainDbm();
+        binding.lnaGainEditText.setText(""+gaindbm);
+        int gdo0 = cc.getGDO0Mode();
+        binding.gpio0EditText.setText(""+gdo0);
+        int gdo2 = cc.getGDO2Mode();
+        binding.gpio2EditText.setText(""+gdo2);
+        int fifothreshold = cc.getFIFOThreshold();
+        binding.fifoThresholdEditText.setText(""+fifothreshold);
+
+
     }
 
     public void updateStatus(){

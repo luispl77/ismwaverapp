@@ -220,7 +220,7 @@ public class PacketModeFragment extends Fragment {
                         showToastOnUiThread("no data in fifo");
                         return;
                     }
-                    Log.i("Received", cc.toHexStringWithHexPrefix(receivedBytes));
+                    Log.i("Received", Utils.toHexStringWithHexPrefix(receivedBytes));
                     String hexString = Utils.bytesToHexString(receivedBytes);
                     getActivity().runOnUiThread(() ->
                             binding.receivePayloadDataTextInput.setText(hexString));

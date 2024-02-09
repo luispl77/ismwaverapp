@@ -1,10 +1,14 @@
 package com.emwaver.ismwaver;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +23,25 @@ import com.emwaver.ismwaver.ui.console.ConsoleViewModel;
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
+    private USBService USBService; // Hold a reference to the bound service
+    private boolean isBound = false; // Track binding state
+
+    private ServiceConnection usbServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder iBinder) {
+            USBService.LocalBinder binder = (USBService.LocalBinder) iBinder;
+            USBService = binder.getService();
+            isBound = true;
+            //Log.i("usbServiceConnection", "onServiceConnected");
+            USBService.checkForConnectedDevices();
+            // You can now directly call service methods if needed
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +78,29 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         IntentFilter filter = new IntentFilter(Constants.ACTION_UPDATE_STATUS);
         registerReceiver(statusReceiver, filter);
+        //Log.i("onResume", "registerReceiver");
+        if (isBound) {
+            // Check for already present devices & connect
+            USBService.checkForConnectedDevices();
+            //Log.i("onResume", "checkForConnectedDevices");
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, USBService.class);
+        bindService(intent, usbServiceConnection, Context.BIND_AUTO_CREATE);
+        //Log.i("onStart", "bindService");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (isBound) {
+            unbindService(usbServiceConnection);
+            isBound = false;
+        }
     }
 
     @Override

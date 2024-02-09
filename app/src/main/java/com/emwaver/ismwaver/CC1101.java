@@ -9,6 +9,7 @@ public class CC1101 {
 
     private final USBService USBService;
 
+    //region CC1101 REGISTERS
     // CC1101 Configuration Registers
     public static final byte CC1101_IOCFG2 = 0x00;       // GDO2 output pin configuration
     public static final byte CC1101_IOCFG1 = 0x01;       // GDO1 output pin configuration
@@ -120,11 +121,12 @@ public class CC1101 {
     public static final int GDO_0 = 0;
 
     public static final int GDO_2 = 1;
+    //endregion
     public CC1101(USBService USBService) {
         this.USBService = USBService;
     }
 
-
+    //region SPI functions
     public void spiStrobe(byte commandStrobe) {
         byte[] command = new byte[2];
         byte[] response;
@@ -153,7 +155,7 @@ public class CC1101 {
         command[2] = (byte)len;
         //response = USBService.sendCommandAndGetResponse(command, (byte)len, 1, 1000);
         response = USBService.sendCommand(command, 1000);
-        Log.i("readBurstReg", toHexStringWithHexPrefix(response));
+        Log.i("readBurstReg", Utils.toHexStringWithHexPrefix(response));
         return response;
     }
     public byte readReg(byte addr){
@@ -162,7 +164,7 @@ public class CC1101 {
         command[0] = '?'; //read reg character
         command[1] = addr; //single read ?[addr]
         response = USBService.sendCommand(command, 1000);
-        Log.i("readReg", toHexStringWithHexPrefix(response));
+        Log.i("readReg", Utils.toHexStringWithHexPrefix(response));
         return response[0];
     }
     public void writeReg(byte addr, byte data){
@@ -229,7 +231,7 @@ public class CC1101 {
 
         byte [] values= {(byte)bestE, (byte)bestM};
         // Log the values found
-        Log.i("DataRate", toHexStringWithHexPrefix(values));
+        Log.i("DataRate", Utils.toHexStringWithHexPrefix(values));
 
         // Read the current value of the MDMCFG4 register to keep the first word
         byte readValue = readReg(CC1101_MDMCFG4);
@@ -270,40 +272,61 @@ public class CC1101 {
 
         return (int) Math.round(bitRate);
     }
+    //endregion
 
-    public boolean setPktLength(int length){
-        byte pktlen = (byte)length;
-        writeReg(CC1101_PKTLEN, pktlen);
-        //verify
-        return readReg(CC1101_PKTLEN) == pktlen;
+
+    //region Frequency
+    public void setFrequency(byte freq2, byte freq1, byte freq0){
+        writeReg(CC1101_FREQ2, freq2);
+        writeReg(CC1101_FREQ1, freq1);
+        writeReg(CC1101_FREQ0, freq0);
     }
-    public int getPktLength(){
-        return readReg(CC1101_PKTLEN);
+    public double getFrequency(){
+        int freq2 = readReg(CC1101_FREQ2) & 0xFF;
+        int freq1 = readReg(CC1101_FREQ1) & 0xFF;
+        int freq0 = readReg(CC1101_FREQ0) & 0xFF;
+
+        // Convert the frequency bytes to a single integer
+        long frequency = ((freq2 << 16) | (freq1 << 8) | freq0);
+        // Assuming the oscillator frequency is 26 MHz
+        double fOsc = 26e6; // 26 MHz
+        double frequencyMHz = frequency * (fOsc / Math.pow(2, 16)) / 1e6; // Convert to MHz
+        Log.i("frequencyMHz", ""+frequencyMHz);
+        return frequencyMHz;
     }
+    //endregion
 
-    public int getPacketFormat() {
-        // Read the value of the PKTCTRL0 register
-        byte pktctrl0Value = readReg(CC1101_PKTCTRL0);
+    //region Modulation
+    public boolean setModulation(byte modulation) {
+        // Read the current register value
+        byte currentValue = readReg(CC1101_MDMCFG2);
 
-        int packetFormat = (pktctrl0Value >> 4) & 0x03;
+        Log.i("MDMCFG2", "current value: " + currentValue);
 
-        // Return the PKT_FORMAT value
-        return packetFormat;
+        byte mask = 0b01110000; // Mask for the modulation bits (bit 4, 5, 6)
+        currentValue &= ~mask; // Clear the modulation bits
+
+        // Set the new modulation bits
+        // Assuming that the 'modulation' argument is already just the 3 bits needed
+        // If not, it would need to be shifted into place with something like (modulation << 4)
+        currentValue |= (modulation << 4); // Combine the new modulation bits with the current value
+
+        Log.i("MDMCFG2", "modified value: " + currentValue);
+        // Write the new value back to the register
+        writeReg(CC1101_MDMCFG2, currentValue);
+
+        // Assuming writeReg method exists and returns a boolean indicating success
+        return readReg(CC1101_MDMCFG2) == currentValue;
     }
-    public boolean setPacketFormat(int format) {
-        byte PKT_FORMAT_MASK = (byte) 0xCF;
-        if (format < 0 || format > 3) {
-            return false; // Return false if the format is out of range
-        }
-        byte currentRegValue = readReg(CC1101_PKTCTRL0);
-        currentRegValue &= PKT_FORMAT_MASK;
-        byte newRegValue = (byte) (currentRegValue | (format << 4));
-        writeReg(CC1101_PKTCTRL0, newRegValue);
-        byte verifyRegValue = readReg(CC1101_PKTCTRL0);
-        // Check if the written value matches the read value for the PKT_FORMAT bits
-        return (verifyRegValue & ~PKT_FORMAT_MASK) == (newRegValue & ~PKT_FORMAT_MASK);
+    public int getModulation(){
+        int mdmcfg2 = readReg(CC1101_MDMCFG2) & 0xFF; // Replace 10 with the actual index of MDMCFG2 in registerPacket
+        int modulationSetting = (mdmcfg2 >> 4) & 0x07; // Shift right by 4 bits and mask out everything but bits 6:4
+        Log.i("modulationSetting", ""+modulationSetting);
+        return modulationSetting;
     }
+    //endregion
 
+    //region Power
     public boolean setPowerLevel(int powerLevel) {
         byte powerSetting;
         switch (powerLevel) {
@@ -366,35 +389,9 @@ public class CC1101 {
                 return Integer.MIN_VALUE; // Indicates an unrecognized power level
         }
     }
+    //endregion
 
-    public boolean setModulation(byte modulation) {
-        // Read the current register value
-        byte currentValue = readReg(CC1101_MDMCFG2);
-
-        Log.i("MDMCFG2", "current value: " + currentValue);
-
-        byte mask = 0b01110000; // Mask for the modulation bits (bit 4, 5, 6)
-        currentValue &= ~mask; // Clear the modulation bits
-
-        // Set the new modulation bits
-        // Assuming that the 'modulation' argument is already just the 3 bits needed
-        // If not, it would need to be shifted into place with something like (modulation << 4)
-        currentValue |= (modulation << 4); // Combine the new modulation bits with the current value
-
-        Log.i("MDMCFG2", "modified value: " + currentValue);
-        // Write the new value back to the register
-        writeReg(CC1101_MDMCFG2, currentValue);
-
-        // Assuming writeReg method exists and returns a boolean indicating success
-        return readReg(CC1101_MDMCFG2) == currentValue;
-    }
-    public int getModulation(){
-        int mdmcfg2 = readReg(CC1101_MDMCFG2) & 0xFF; // Replace 10 with the actual index of MDMCFG2 in registerPacket
-        int modulationSetting = (mdmcfg2 >> 4) & 0x07; // Shift right by 4 bits and mask out everything but bits 6:4
-        Log.i("modulationSetting", ""+modulationSetting);
-        return modulationSetting;
-    }
-
+    //region Bandwidth
     public boolean setBandwidth(double bandwidth) {
         // Constants for the register calculation
         final double F_XTAL = 26_000_000.0; // Crystal frequency in Hz
@@ -476,7 +473,7 @@ public class CC1101 {
 
         byte [] values = {(byte)bestE, (byte)bestM};
         // Log the values found
-        Log.i("Deviation", toHexStringWithHexPrefix(values));
+        Log.i("Deviation", Utils.toHexStringWithHexPrefix(values));
 
         // Combine the read TX and RX parts with the calculated DEVIATION_E and DEVIATION_M
         int combinedValue = ((bestE << 4) & 0x70) | (bestM & 0x07);
@@ -510,7 +507,169 @@ public class CC1101 {
 
         return deviation;
     }
+    //endregion
 
+    //region Gain
+    public boolean setMaxDvgaGain(byte maxDvgaGain) {
+        byte MAX_DVGA_GAIN_MASK = (byte) 0xC0; // 1100 0000
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        regValue = (byte) ((regValue & ~MAX_DVGA_GAIN_MASK) | ((maxDvgaGain << 6) & MAX_DVGA_GAIN_MASK));
+        writeReg(CC1101_AGCCTRL2, regValue);
+        return readReg(CC1101_AGCCTRL2) == regValue;
+    }
+    public byte getMaxDvgaGain() {
+        byte MAX_DVGA_GAIN_MASK = (byte) 0xC0; // 1100 0000
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        return (byte) ((regValue & MAX_DVGA_GAIN_MASK) >>> 6);
+    }
+    public boolean setMaxLnaGain(byte maxLnaGain) {
+        byte MAX_LNA_GAIN_MASK = (byte) 0x38;  // 0011 1000
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        regValue = (byte) ((regValue & ~MAX_LNA_GAIN_MASK) | ((maxLnaGain << 3) & MAX_LNA_GAIN_MASK));
+        writeReg(CC1101_AGCCTRL2, regValue);
+        return readReg(CC1101_AGCCTRL2) == regValue;
+    }
+    public byte getMaxLnaGain() {
+        byte MAX_LNA_GAIN_MASK = (byte) 0x38;  // 0011 1000
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        return (byte) ((regValue & MAX_LNA_GAIN_MASK) >>> 3);
+    }
+    public boolean setMagnTarget(byte magnTarget) {
+        byte MAGN_TARGET_MASK = (byte) 0x07;   // 0000 0111
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        regValue = (byte) ((regValue & ~MAGN_TARGET_MASK) | (magnTarget & MAGN_TARGET_MASK));
+        writeReg(CC1101_AGCCTRL2, regValue);
+        return readReg(CC1101_AGCCTRL2) == regValue;
+    }
+    public byte getMagnTarget() {
+        byte MAGN_TARGET_MASK = (byte) 0x07;   // 0000 0111
+        byte regValue = readReg(CC1101_AGCCTRL2);
+        return (byte) (regValue & MAGN_TARGET_MASK);
+    }
+    public boolean setGainDbm(double gainDbm) {
+        byte maxLnaGain = 0;
+        byte maxDvgaGain = 0;
+        boolean matchFound = false;
+        int[][] gainSettings = {
+                {-90, -84, -78, -72}, // MAX_LNA_GAIN 00
+                {-88, -82, -76, -70}, // MAX_LNA_GAIN 01
+                {-84, -78, -72, -66}, // MAX_LNA_GAIN 10
+                {-82, -76, -70, -64}, // MAX_LNA_GAIN 11
+                {-80, -74, -68, -62}, // MAX_LNA_GAIN 100
+                {-78, -72, -66, -60}, // MAX_LNA_GAIN 101
+                {-76, -70, -64, -58}, // MAX_LNA_GAIN 110
+                {-74, -68, -62, -56}  // MAX_LNA_GAIN 111
+        };
+
+        // Find the matching setting for the gain in dBm
+        for (int lna = 0; lna < gainSettings.length; lna++) {
+            for (int dvga = 0; dvga < gainSettings[lna].length; dvga++) {
+                if (gainSettings[lna][dvga] <= gainDbm) {
+                    maxLnaGain = (byte)lna;
+                    maxDvgaGain = (byte)dvga;
+                    matchFound = true;
+                    break;
+                }
+            }
+            if (matchFound) {
+                break;
+            }
+        }
+
+        if (!matchFound) {
+            // No match found, possibly log this or handle the error
+            return false;
+        }
+        // Use previously defined setters to set the gain values
+        if(!setMaxLnaGain(maxLnaGain)){
+            return false;
+        }
+        if(!setMaxDvgaGain(maxDvgaGain)){
+            return false;
+        }
+        return true;
+    }
+    public double getGainDbm() {
+        // Use previously defined getters to get the gain values
+        byte maxLnaGain = getMaxLnaGain();
+        byte maxDvgaGain = getMaxDvgaGain();
+        int[][] gainSettings = {
+                {-90, -84, -78, -72}, // MAX_LNA_GAIN 00
+                {-88, -82, -76, -70}, // MAX_LNA_GAIN 01
+                {-84, -78, -72, -66}, // MAX_LNA_GAIN 10
+                {-82, -76, -70, -64}, // MAX_LNA_GAIN 11
+                {-80, -74, -68, -62}, // MAX_LNA_GAIN 100
+                {-78, -72, -66, -60}, // MAX_LNA_GAIN 101
+                {-76, -70, -64, -58}, // MAX_LNA_GAIN 110
+                {-74, -68, -62, -56}  // MAX_LNA_GAIN 111
+        };
+
+        // Look up the dBm value from the table
+        return gainSettings[maxLnaGain][maxDvgaGain];
+    }
+    public boolean setCarrierSenseRelThr(byte carrierSenseRelThr) {
+        byte CARRIER_SENSE_REL_THR_MASK = (byte) 0x30; // 0011 0000
+        byte regValue = readReg(CC1101_AGCCTRL1);
+        // Clear the relative threshold bits and set the new value
+        regValue = (byte) ((regValue & ~CARRIER_SENSE_REL_THR_MASK) | ((carrierSenseRelThr << 4) & CARRIER_SENSE_REL_THR_MASK));
+        writeReg(CC1101_AGCCTRL1, regValue);
+        return readReg(CC1101_AGCCTRL1) == regValue;
+    }
+    public byte getCarrierSenseRelThr() {
+        byte CARRIER_SENSE_REL_THR_MASK = (byte) 0x30; // 0011 0000
+        byte regValue = readReg(CC1101_AGCCTRL1);
+        // Isolate the relative threshold bits
+        return (byte) ((regValue & CARRIER_SENSE_REL_THR_MASK) >>> 4);
+    }
+    public boolean setCarrierSenseAbsThr(byte carrierSenseAbsThr) {
+        byte CARRIER_SENSE_ABS_THR_MASK = (byte) 0x0F; // 0000 1111
+        byte regValue = readReg(CC1101_AGCCTRL1);
+        // Clear the absolute threshold bits and set the new value
+        regValue = (byte) ((regValue & ~CARRIER_SENSE_ABS_THR_MASK) | (carrierSenseAbsThr & CARRIER_SENSE_ABS_THR_MASK));
+        writeReg(CC1101_AGCCTRL1, regValue);
+        return readReg(CC1101_AGCCTRL1) == regValue;
+    }
+    public byte getCarrierSenseAbsThr() {
+        byte CARRIER_SENSE_ABS_THR_MASK = (byte) 0x0F; // 0000 1111
+        byte regValue = readReg(CC1101_AGCCTRL1);
+        // Isolate the absolute threshold bits
+        return (byte) (regValue & CARRIER_SENSE_ABS_THR_MASK);
+    }
+    //endregion
+
+    //region Packet Settings
+    public boolean setPktLength(int length){
+        byte pktlen = (byte)length;
+        writeReg(CC1101_PKTLEN, pktlen);
+        //verify
+        return readReg(CC1101_PKTLEN) == pktlen;
+    }
+    public int getPktLength(){
+        return readReg(CC1101_PKTLEN);
+    }
+
+    public int getPacketFormat() {
+        // Read the value of the PKTCTRL0 register
+        byte pktctrl0Value = readReg(CC1101_PKTCTRL0);
+
+        int packetFormat = (pktctrl0Value >> 4) & 0x03;
+
+        // Return the PKT_FORMAT value
+        return packetFormat;
+    }
+    public boolean setPacketFormat(int format) {
+        byte PKT_FORMAT_MASK = (byte) 0xCF;
+        if (format < 0 || format > 3) {
+            return false; // Return false if the format is out of range
+        }
+        byte currentRegValue = readReg(CC1101_PKTCTRL0);
+        currentRegValue &= PKT_FORMAT_MASK;
+        byte newRegValue = (byte) (currentRegValue | (format << 4));
+        writeReg(CC1101_PKTCTRL0, newRegValue);
+        byte verifyRegValue = readReg(CC1101_PKTCTRL0);
+        // Check if the written value matches the read value for the PKT_FORMAT bits
+        return (verifyRegValue & ~PKT_FORMAT_MASK) == (newRegValue & ~PKT_FORMAT_MASK);
+    }
 
     public boolean setManchesterEncoding(boolean manchester){
         byte mdmcfg2 = readReg(CC1101_MDMCFG2);
@@ -651,38 +810,57 @@ public class CC1101 {
         // Read the sync word from the CC1101_SYNC1 and CC1101_SYNC0 addresses
         return readBurstReg(CC1101_SYNC1, (byte) 2);
     }
+    //endregion
 
-
-    public boolean getGDO() {
-        byte[] command = {'g', 'd', 'o', '0'}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-
-        if (response != null) {
-            Log.i("Command Response", Arrays.toString(response));
-            String responseString = new String(response).trim(); // Convert byte[] to String and trim any trailing whitespaces
-
-            // Compare the response string
-            return responseString.equals("HIGH");
-        }
-
-        return false;
-    }
-
+    //region GPIO
     public boolean getGDO0() {
         byte response = readReg((byte) (CC1101_PKTSTATUS | READ_BURST));
         return (response & 1) == 1;
     }
-
     public boolean getGDO2() {
         byte response = readReg((byte) (CC1101_PKTSTATUS | READ_BURST));
         return (response & 0x04) >> 2 == 1;
     }
+    public void configureGDO(int gdo0, int gdoInput) {
+        byte[] command = {'p', 'i', 'n', (byte) gdo0, (byte) gdoInput}; // Replace with your actual command
+        byte[] response = USBService.sendCommand(command, 1000);
+        Log.i("configureGDO", gdo0 + ", " + Utils.bytesToHexString(response));  //response is the reading at that register
+    }
+    public void setGDOMode(byte gdo2, byte gdo1, byte gdo0){
+        writeReg(CC1101_IOCFG2, gdo2);
+        writeReg(CC1101_IOCFG1, gdo1);
+        writeReg(CC1101_IOCFG0, gdo0);
+    }
+    public boolean setGDO0Mode(byte gdo0){
+        writeReg(CC1101_IOCFG0, gdo0);
+        return readReg(CC1101_IOCFG0) == gdo0;
+    }
+    public boolean setGDO2Mode(byte gdo2){
+        writeReg(CC1101_IOCFG2, gdo2);
+        return readReg(CC1101_IOCFG2) == gdo2;
+    }
+    public int getGDO0Mode(){
+        return readReg(CC1101_IOCFG0);
+    }
+    public int getGDO2Mode(){
+        return readReg(CC1101_IOCFG2);
+    }
+
+    public boolean setFIFOThreshold(byte threshold){
+        writeReg(CC1101_FIFOTHR, threshold);
+        return readReg(CC1101_FIFOTHR) == threshold;
+    }
+    public int getFIFOThreshold(){
+        return readReg(CC1101_FIFOTHR);
+    }
+    //endregion
 
 
+    //region Init Routines
     public void initRx() {
         byte[] PA_TABLE_OOK = {0x00, (byte) 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
-        setGDO((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
+        setGDOMode((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
         //writeReg(CC1101_FIFOTHR,  0x06);//smart rf ADC, fifo threshold 4 bytes in fifo (signal assert)
 
         writeReg(CC1101_MDMCFG2, (byte) 0x32); //MOD_FORMAT: ASK/OOK, SYNC_MODE: 16/16 bits, MANCHESTER: disable
@@ -747,7 +925,7 @@ public class CC1101 {
 
     public void initRxContinuous() {
         writeReg(CC1101_PKTCTRL0, (byte) 0x32); // async serial mode (packet engine is off)
-        setGDO((byte) 0x0D, (byte) 0x2E, (byte) 0x0D);
+        setGDOMode((byte) 0x0D, (byte) 0x2E, (byte) 0x0D);
         init433();
         configureGDO(GDO_0, GDO_INPUT);
 
@@ -780,7 +958,7 @@ public class CC1101 {
     public void initTx(){
         byte[] PA_TABLE_OOK = {0x00, (byte) 0xC0,0x00,0x00,0x00,0x00,0x00,0x00};
         setFrequency((byte) 0x10, (byte) 0xB0, (byte) 0x71); //433.919830
-        setGDO((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
+        setGDOMode((byte) 0x2E, (byte) 0x2E, (byte) 0x00); // high impedance, high impedance, GDO0 as fifo threshold assert.
         //writeReg(CC1101_FIFOTHR,  0x06);//smart rf ADC, fifo threshold 4 bytes in fifo (signal assert)
 
         writeReg(CC1101_MDMCFG2, (byte) 0x32); //MOD_FORMAT: ASK/OOK, SYNC_MODE: 16/16 bits, MANCHESTER: disable
@@ -830,7 +1008,7 @@ public class CC1101 {
         writeReg(CC1101_IOCFG2, (byte) 0x2B); // GDO2 synchronous serial clock. should not matter in Tx, but smartrf is recommending synchronous mode when in Tx
         writeReg(CC1101_IOCFG1, (byte) 0x2E); // high impedance
         writeReg(CC1101_IOCFG0, (byte) 0x0C); // GDO0 as synchronous serial output. should not matter in Tx, but smartrf is recommending synchronous mode when in Tx
-        setGDO((byte) 0x2B, (byte) 0x2E, (byte) 0x0C);
+        setGDOMode((byte) 0x2B, (byte) 0x2E, (byte) 0x0C);
 
 
         writeReg(CC1101_MDMCFG2, (byte) 0x30); //ASK/OOK modulation.
@@ -858,56 +1036,6 @@ public class CC1101 {
         init433();
         initTxContinuous();
     }
-
-    public void configureGDO(int gdo0, int gdoInput) {
-        byte[] command = {'p', 'i', 'n', (byte) gdo0, (byte) gdoInput}; // Replace with your actual command
-        byte[] response = USBService.sendCommand(command, 1000);
-        Log.i("configureGDO", gdo0 + ", " + Utils.bytesToHexString(response));  //response is the reading at that register
-    }
-
-    public void setFrequency(byte freq2, byte freq1, byte freq0){
-        writeReg(CC1101_FREQ2, freq2);
-        writeReg(CC1101_FREQ1, freq1);
-        writeReg(CC1101_FREQ0, freq0);
-    }
-
-    public double getFrequency(){
-        int freq2 = readReg(CC1101_FREQ2) & 0xFF;
-        int freq1 = readReg(CC1101_FREQ1) & 0xFF;
-        int freq0 = readReg(CC1101_FREQ0) & 0xFF;
-
-        // Convert the frequency bytes to a single integer
-        long frequency = ((freq2 << 16) | (freq1 << 8) | freq0);
-        // Assuming the oscillator frequency is 26 MHz
-        double fOsc = 26e6; // 26 MHz
-        double frequencyMHz = frequency * (fOsc / Math.pow(2, 16)) / 1e6; // Convert to MHz
-        Log.i("frequencyMHz", ""+frequencyMHz);
-        return frequencyMHz;
-    }
-
-    public void setGDO(byte gdo2, byte gdo1, byte gdo0){
-        writeReg(CC1101_IOCFG2, gdo2);
-        writeReg(CC1101_IOCFG1, gdo1);
-        writeReg(CC1101_IOCFG0, gdo0);
-    }
-
-    public String toHexStringWithHexPrefix(byte[] array) {
-        StringBuilder hexString = new StringBuilder("[");
-        for (int i = 0; i < array.length; i++) {
-            // Convert the byte to a hex string with a leading zero, then take the last two characters
-            // (in case of negative bytes, which result in longer hex strings)
-            String hex = "0x" + Integer.toHexString(array[i] & 0xFF).toUpperCase();
-
-            hexString.append(hex);
-
-            // Append comma and space if this is not the last byte
-            if (i < array.length - 1) {
-                hexString.append(", ");
-            }
-        }
-        hexString.append("]");
-        return hexString.toString();
-    }
-
+    //endregion
 
 }

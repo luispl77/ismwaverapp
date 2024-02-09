@@ -160,8 +160,7 @@ public class ConsoleFragment extends Fragment {
         binding.connectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Constants.ACTION_INITIATE_USB_CONNECTION);
-                getContext().sendBroadcast(intent); // Send intent to USBService to initiate USB connection
+                USBService.connectUSBSerial();
             }
         });
 

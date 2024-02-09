@@ -229,17 +229,6 @@
                     android:hint="Enter LNA Gain in dB"
                     android:id="@+id/lnaGainEditText"/>
 
-                <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Enter Filter Length in #samples"
-                    android:id="@+id/filterLengthEditText"/>
-
-                <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Enter Decision Boundary in dB"
-                    android:id="@+id/decisionBoundaryEditText"/>
             </LinearLayout>
 
 
