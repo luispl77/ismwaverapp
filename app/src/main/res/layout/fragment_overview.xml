@@ -43,7 +43,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Frequency Section -->
             <TextView
                 android:id="@+id/frequencyHeader"
                 android:layout_width="match_parent"
@@ -53,6 +52,7 @@
                 android:text="Frequency"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
+            <!-- Frequency Section -->
             <LinearLayout
                 android:id="@+id/frequencyContent"
                 android:layout_width="match_parent"
@@ -66,13 +66,25 @@
                     android:layout_height="wrap_content"
                     android:text="The frequency configuration determines the operating frequency of the device." />
 
-                <EditText
-                    android:id="@+id/frequencyEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter frequency in MHz" />
+                    android:orientation="horizontal">
 
-                <!-- Add more EditTexts as needed for the section -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Frequency (MHz):" />
+
+                    <EditText
+                        android:id="@+id/frequencyEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter frequency in MHz" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -107,11 +119,26 @@
                     android:layout_height="wrap_content"
                     android:text="Modulation can be either Amplitude modulation (ASK) or Frequency modulation (FSK)." />
 
-                <EditText
-                    android:id="@+id/modulationEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter ASK/FSK" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Modulation:" />
+
+                    <EditText
+                        android:id="@+id/modulationEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter ASK/FSK" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Power Section -->
@@ -145,12 +172,27 @@
                     android:layout_height="wrap_content"
                     android:text="Power level can be a maximum of +12 dBm." />
 
-                <EditText
-                    android:id="@+id/powerEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter power in dBm" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Power (dBm):" />
+
+                    <EditText
+                        android:id="@+id/powerEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter power in dBm" />
+
+                </LinearLayout>
             </LinearLayout>
+
 
             <!-- Bandwidth Section -->
             <TextView
@@ -183,17 +225,43 @@
                     android:layout_height="wrap_content"
                     android:text="Bandwidth configuration affects noise, range and reception." />
 
-                <EditText
-                    android:id="@+id/bandwidthEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter bandwidth in kHz" />
+                    android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/deviationEditText"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Bandwidth (kHz):" />
+
+                    <EditText
+                        android:id="@+id/bandwidthEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter bandwidth" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter deviation in kHz" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Deviation (kHz):" />
+
+                    <EditText
+                        android:id="@+id/deviationEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter deviation" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Gain Section -->
@@ -227,12 +295,24 @@
                     android:layout_height="wrap_content"
                     android:text="Gain affects noise, range and reception." />
 
-                <EditText
-                    android:id="@+id/lnaGainEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter LNA Gain in dB" />
+                    android:orientation="horizontal">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="LNA Gain (dB):" />
+
+                    <EditText
+                        android:id="@+id/lnaGainEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter LNA Gain" />
+                </LinearLayout>
             </LinearLayout>
 
 
@@ -267,41 +347,107 @@
                     android:layout_height="wrap_content"
                     android:text="Packet Settings for Packet Mode." />
 
-                <EditText
-                    android:id="@+id/packetFormatEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Packet Format" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Packet Format:" />
+                    <EditText
+                        android:id="@+id/packetFormatEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter Packet Format" />
+                </LinearLayout>
 
-                <EditText
-                    android:id="@+id/packetLengthEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Packet Length in #bytes" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Packet Length (#bytes):" />
+                    <EditText
+                        android:id="@+id/packetLengthEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter Packet Length" />
+                </LinearLayout>
 
-                <EditText
-                    android:id="@+id/preambleLengthEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Preamble Length in #bytes" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Preamble Length (#bytes):" />
+                    <EditText
+                        android:id="@+id/preambleLengthEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter Preamble Length" />
+                </LinearLayout>
 
-                <EditText
-                    android:id="@+id/syncWordEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter 2-byte Sync Word" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Sync Word:" />
+                    <EditText
+                        android:id="@+id/syncWordEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter 2-byte Sync Word" />
+                </LinearLayout>
 
-                <EditText
-                    android:id="@+id/syncModeEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Select Sync Mode Detection" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Sync Mode Detection:" />
+                    <EditText
+                        android:id="@+id/syncModeEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Select Sync Mode Detection" />
+                </LinearLayout>
 
-                <EditText
-                    android:id="@+id/dataRateEditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter Data Rate in kbit/s" />
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Data Rate (kbit/s):" />
+                    <EditText
+                        android:id="@+id/dataRateEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter Data Rate" />
+                </LinearLayout>
             </LinearLayout>
 
 
@@ -336,24 +482,68 @@
                     android:layout_height="wrap_content"
                     android:text="The CC1101 has 2 general purpose pins that can have many different configurations." />
 
-                <EditText
-                    android:id="@+id/gpio0EditText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Select GPIO 0 function" />
+                    android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/gpio2EditText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Select GPIO 2 function" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="GPIO 0 Function:" />
 
-                <EditText
-                    android:id="@+id/fifoThresholdEditText"
+                    <EditText
+                        android:id="@+id/gpio0EditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Select GPIO 0 function" />
+
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter FIFO Threshold in #bytes" />
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="GPIO 2 Function:" />
+
+                    <EditText
+                        android:id="@+id/gpio2EditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Select GPIO 2 function" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="FIFO Threshold (#bytes):" />
+
+                    <EditText
+                        android:id="@+id/fifoThresholdEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Enter FIFO Threshold" />
+
+                </LinearLayout>
+
             </LinearLayout>
+
 
         </LinearLayout>
     </ScrollView>
