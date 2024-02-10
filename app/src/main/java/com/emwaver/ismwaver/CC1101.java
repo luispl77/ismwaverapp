@@ -281,6 +281,21 @@ public class CC1101 {
         writeReg(CC1101_FREQ1, freq1);
         writeReg(CC1101_FREQ0, freq0);
     }
+    public void setFrequencyMHz(double frequencyMHz) {
+        // Assuming the oscillator frequency is 26 MHz
+        double fOsc = 26e6; // 26 MHz
+
+        // Calculate the integer representation of the frequency for CC1101 registers
+        long frequency = (long) Math.round(frequencyMHz * 1e6 * Math.pow(2, 16) / fOsc);
+
+        // Extract the individual frequency bytes
+        byte freq2 = (byte) ((frequency >> 16) & 0xFF);
+        byte freq1 = (byte) ((frequency >> 8) & 0xFF);
+        byte freq0 = (byte) (frequency & 0xFF);
+
+        // Set the frequency using your existing function
+        setFrequency(freq2, freq1, freq0);
+    }
     public double getFrequency(){
         int freq2 = readReg(CC1101_FREQ2) & 0xFF;
         int freq1 = readReg(CC1101_FREQ1) & 0xFF;
@@ -671,25 +686,6 @@ public class CC1101 {
         return (verifyRegValue & ~PKT_FORMAT_MASK) == (newRegValue & ~PKT_FORMAT_MASK);
     }
 
-    public boolean setManchesterEncoding(boolean manchester){
-        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
-        //bit 3 is the manchester encoding bit
-        if(manchester){
-            mdmcfg2 |= 0b00001000;
-        }
-        else{
-            mdmcfg2 &= 0b11110111;
-        }
-        writeReg(CC1101_MDMCFG2, mdmcfg2);
-        //verify
-        return readReg(CC1101_MDMCFG2) == mdmcfg2;
-    }
-    public boolean getManchesterEncoding() {
-        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
-        // Bit 3 is the Manchester encoding bit, mask it with 0b00001000
-        return (mdmcfg2 & 0b00001000) != 0;
-    }
-
     public boolean setSyncMode(byte syncmode){
         // Read the current register value
         byte currentValue = readReg(CC1101_MDMCFG2);
@@ -809,6 +805,25 @@ public class CC1101 {
     public byte[] getSyncWord() {
         // Read the sync word from the CC1101_SYNC1 and CC1101_SYNC0 addresses
         return readBurstReg(CC1101_SYNC1, (byte) 2);
+    }
+
+    public boolean setManchesterEncoding(boolean manchester){
+        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
+        //bit 3 is the manchester encoding bit
+        if(manchester){
+            mdmcfg2 |= 0b00001000;
+        }
+        else{
+            mdmcfg2 &= 0b11110111;
+        }
+        writeReg(CC1101_MDMCFG2, mdmcfg2);
+        //verify
+        return readReg(CC1101_MDMCFG2) == mdmcfg2;
+    }
+    public boolean getManchesterEncoding() {
+        byte mdmcfg2 = readReg(CC1101_MDMCFG2);
+        // Bit 3 is the Manchester encoding bit, mask it with 0b00001000
+        return (mdmcfg2 & 0b00001000) != 0;
     }
     //endregion
 

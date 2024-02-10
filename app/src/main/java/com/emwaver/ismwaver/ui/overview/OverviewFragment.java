@@ -19,11 +19,14 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.emwaver.ismwaver.CC1101;
 import com.emwaver.ismwaver.R;
@@ -33,6 +36,7 @@ import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public class OverviewFragment extends Fragment {
 
@@ -118,14 +122,190 @@ public class OverviewFragment extends Fragment {
         });
 
 
+        //region ACTION_DONE LISTENERS
+
+        //region Frequency
+        handleDoneAction(binding.frequencyEditText, (frequencyStr) -> {
+            double frequencyMHz = parseDoubleInput(frequencyStr);
+            cc.setFrequencyMHz(frequencyMHz);
+        });
+        //endregion
+
+        //region Modulation
+        handleDoneAction(binding.modulationEditText, (modulationInput) -> {
+            modulationInput = modulationInput.toUpperCase();
+            if (modulationInput.equals("ASK")) {
+                cc.setModulation(CC1101.MOD_ASK);
+            } else if (modulationInput.equals("FSK")) {
+                cc.setModulation(CC1101.MOD_2FSK);
+            } else {
+                Toast.makeText(getContext(), "Invalid modulation", Toast.LENGTH_SHORT).show();
+            }
+        });
+        //endregion
+
+        //region Power
+        handleDoneAction(binding.powerEditText, (powerStr) -> {
+            int powerLevel = Integer.parseInt(powerStr);
+            cc.setPowerLevel(powerLevel);
+        });
+        //endregion
+
+        //region Bandwidth
+        handleDoneAction(binding.bandwidthEditText, (bandwidthStr) -> {
+            double bandwidthKHz = parseDoubleInput(bandwidthStr);
+            boolean success = cc.setBandwidth(bandwidthKHz); // Call your setBandwidth function
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid bandwidth or bandwidth too low", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        handleDoneAction(binding.deviationEditText, (deviationStr) -> {
+            int deviationKHz = Integer.parseInt(deviationStr);
+            boolean success = cc.setDeviation(deviationKHz); // Call your setDeviation function
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid deviation", Toast.LENGTH_SHORT).show();
+            }
+        });
+        //endregion
+
+        //region Gain
+        handleDoneAction(binding.lnaGainEditText, (gainStr) -> {
+            double gainDbm = parseDoubleInput(gainStr);
+            boolean success = cc.setGainDbm(gainDbm);
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid gain value", Toast.LENGTH_SHORT).show();
+            }
+        });
+        //endregion
+
+        //region Packet Settings
+        handleDoneAction(binding.packetFormatEditText, (formatStr) -> {
+            int format = Integer.parseInt(formatStr);
+            boolean success = cc.setPacketFormat(format);
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid packet format", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        handleDoneAction(binding.packetLengthEditText, (lengthStr) -> {
+            int length = Integer.parseInt(lengthStr);
+            boolean success = cc.setPktLength(length);
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid packet length", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        handleDoneAction(binding.preambleLengthEditText, (preambleStr) -> {
+            int preambleBytes = Integer.parseInt(preambleStr);
+            boolean success = cc.setPreambleLength(preambleBytes);
+            if (!success) {
+                Toast.makeText(getContext(), "Invalid preamble length", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+        handleDoneAction(binding.dataRateEditText, (dataRateStr) -> {
+            int dataRate = Integer.parseInt(dataRateStr);
+            if (cc.setDataRate(dataRate)) {
+                showToastOnUiThread("Data rate set to " + dataRate + " successfully");
+            } else {
+                showToastOnUiThread("Error setting data rate");
+            }
+        });
+
+
+        handleDoneAction(binding.syncWordEditText, (hexInput) -> {
+            hexInput = hexInput.trim();
+            if (hexInput.length() != 4) {
+                showToastOnUiThread("Input must be a 4-character hex value");
+                return;
+            }
+            byte[] syncWord = Utils.convertHexStringToByteArray(hexInput);
+            if (syncWord == null) {
+                showToastOnUiThread("Invalid hex input");
+                return;
+            }
+            if (cc.setSyncWord(syncWord)) {
+                showToastOnUiThread("Sync word set successfully to " + hexInput);
+            } else {
+                showToastOnUiThread("Error setting Sync word");
+            }
+        });
+
+        handleDoneAction(binding.syncModeEditText, (syncModeStr) -> {
+            int syncMode = Integer.parseInt(syncModeStr);
+            boolean success = cc.setSyncMode((byte)syncMode); // Assume `setSyncMode` expects a byte
+            if (!success) {
+                Toast.makeText(getContext(), "Failed to set sync mode", Toast.LENGTH_SHORT).show();
+            }
+        });
+        //endregion
+
+        //region GPIO
+        handleDoneAction(binding.gpio0EditText, (gdo0ModeStr) -> {
+            byte gdo0Mode = Byte.parseByte(gdo0ModeStr);
+            boolean success = cc.setGDO0Mode(gdo0Mode);
+            if (!success) {
+                Toast.makeText(getContext(), "Failed to set GDO0 mode", Toast.LENGTH_SHORT).show();
+            }
+        });
+        handleDoneAction(binding.gpio2EditText, (gdo2ModeStr) -> {
+            byte gdo2Mode = Byte.parseByte(gdo2ModeStr);
+            boolean success = cc.setGDO2Mode(gdo2Mode);
+            if (!success) {
+                Toast.makeText(getContext(), "Failed to set GDO2 mode", Toast.LENGTH_SHORT).show();
+            }
+        });
+        handleDoneAction(binding.fifoThresholdEditText, (thresholdStr) -> {
+            byte threshold = Byte.parseByte(thresholdStr);
+            boolean success = cc.setFIFOThreshold(threshold);
+            if (!success) {
+                Toast.makeText(getContext(), "Failed to set FIFO threshold", Toast.LENGTH_SHORT).show();
+            }
+        });
+        //endregion
+
+        //endregion
+
+
 
 
         return root;
     }
 
+    private void showToastOnUiThread(String message) {
+        getActivity().runOnUiThread(() -> Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
+    }
+    private void handleDoneAction(EditText editText, Consumer<String> settingAction) {
+        editText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                String inputStr = editText.getText().toString();
+                try {
+                    settingAction.accept(inputStr); // Execute the provided action
+                    Toast.makeText(getContext(), "Setting updated", Toast.LENGTH_SHORT).show();
+                } catch (IllegalArgumentException e) {
+                    Toast.makeText(getContext(), "Invalid input format", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    // Helper for simple parsing if necessary (adjust as needed)
+    private double parseDoubleInput(String inputStr) throws IllegalArgumentException {
+        try {
+            return Double.parseDouble(inputStr);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid input format");
+        }
+    }
+
+
     public void updateAccordionSettings(){
         double frequencyMHz = cc.getFrequency();
-        binding.frequencyEditText.setText(String.format(Locale.getDefault(), "%.6f", frequencyMHz));
+        binding.frequencyEditText.setText(String.format(Locale.US, "%.6f", frequencyMHz));
         int modulation = cc.getModulation();
         binding.modulationEditText.setText(modulation == 0 ? "FSK" : "ASK");
         int powerLevel = cc.getPowerLevel();
@@ -155,10 +335,6 @@ public class OverviewFragment extends Fragment {
         binding.gpio2EditText.setText(""+gdo2);
         int fifothreshold = cc.getFIFOThreshold();
         binding.fifoThresholdEditText.setText(""+fifothreshold);
-
-
-
-
     }
 
 
