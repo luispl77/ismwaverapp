@@ -445,20 +445,24 @@ public class CC1101 {
     public double getBandwidth() {
         // Constants for the register calculation
         final double F_XTAL = 26_000_000.0; // Crystal frequency in Hz
-        final double F_IF = 100_000.0; // Intermediate frequency in Hz
 
         // Read the value from the MDMCFG4 register
         byte registerValue = readReg((byte) CC1101_MDMCFG4);
 
-        // Extract the bandwidth exponent (bw_exp) and mantissa (bw_mant) from the register value
-        int bw_exp = (registerValue >> 4) & 0x0F;
-        int bw_mant = registerValue & 0x0F;
+        // Extract the bandwidth exponent (CHANBW_E) and mantissa (CHANBW_M) from the register value
+        int bw_exp = (registerValue >> 6) & 0x03; // CHANBW_E: bits 7-6
+        int bw_mant = (registerValue >> 4) & 0x03; // CHANBW_M: bits 5-4
 
-        // Calculate the bandwidth in kHz using the reverse formula
-        double bandwidth = (F_XTAL / (8 * (bw_exp + 2) * F_IF)) / (bw_mant + 8);
+        // Calculate the bandwidth in Hz using the correct formula
+        double bandwidthHz = F_XTAL / (8.0 * (4.0 + bw_mant) * Math.pow(2.0, bw_exp));
 
-        return bandwidth;
+        // Convert the bandwidth to kHz
+        double bandwidthkHz = bandwidthHz / 1000.0;
+
+        return bandwidthkHz;
     }
+
+
 
 
     public boolean setDeviation(int deviation) {

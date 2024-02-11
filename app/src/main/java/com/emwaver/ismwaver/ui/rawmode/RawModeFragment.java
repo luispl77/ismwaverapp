@@ -65,8 +65,8 @@ public class RawModeFragment extends Fragment {
 
     private CC1101 cc;
     public ScheduledExecutorService scheduler;
-    private final int refreshRate = 100; // Refresh rate in milliseconds
-    private int numberBins = 500;
+    private final int refreshRate = 50; // Refresh rate in milliseconds
+    private int numberBins = 1000;
     private int errorTolerance = 10;
     private int samplesPerSymbol = 40;
     private ActivityResultLauncher<Intent> createFileLauncher;
@@ -176,7 +176,7 @@ public class RawModeFragment extends Fragment {
 
         binding.fillTeslaButton.setOnClickListener(v -> {
             USBService.setBuffer(Constants.DATA_BUFFER);
-            fillBufferWithTesla(0.001);
+            fillBufferWithTesla(0.0005);
             USBService.setBuffer(Constants.COMMAND_BUFFER);
             refreshChart();
         });

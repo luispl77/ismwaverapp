@@ -25,7 +25,7 @@
         android:adjustViewBounds="true"
         android:scaleType="centerInside"
         android:src="@drawable/ismwaver"
-        android:visibility="invisible"
+        android:visibility="visible"
 
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
