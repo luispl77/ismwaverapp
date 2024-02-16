@@ -16,8 +16,10 @@
 
 package com.emwaver.ismwaver.ui.flash;
 
+import android.content.Context;
 import android.content.res.AssetManager;
 import android.hardware.usb.UsbDeviceConnection;
+import android.net.Uri;
 import android.util.Log;
 
 import java.io.InputStream;
@@ -388,6 +390,39 @@ public class Dfu {
 
         inputStream.close();
     }
+
+    public void writeFlash(Context context, Uri fileUri) throws Exception {
+        InputStream inputStream = context.getContentResolver().openInputStream(fileUri);
+
+        if (inputStream == null) {
+            throw new Exception("Unable to open input stream for the selected file.");
+        }
+
+        byte[] writeBuffer = new byte[BLOCK_SIZE];
+        byte[] readBuffer = new byte[BLOCK_SIZE];
+        int blockNum = 2;
+        int readBytes;
+
+        while ((readBytes = inputStream.read(writeBuffer, 0, BLOCK_SIZE)) > 0) {
+            writeBlock(writeBuffer, blockNum, readBytes);
+
+            // Verify block write
+            waitUploadIdle();
+            readBlock(readBuffer, blockNum, readBytes);
+
+            // You can log the read buffer using a method similar to print_block if needed
+            if (equalArrays(writeBuffer, readBuffer, readBytes)) {
+                onStatusMsg("Block " + blockNum + " verified successfully.\n");
+            } else {
+                throw new Exception("Error verifying block " + (blockNum-2) + ".");
+            }
+
+            blockNum++;
+        }
+
+        inputStream.close();
+    }
+
 
     private boolean equalArrays(byte[] a, byte[] b, int length) {
         if (a == b) {
