@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -353,6 +355,31 @@ public class OverviewFragment extends Fragment {
             wasPreviouslyConnected = isConnected;
         }
 
+    }
+
+    private void saveRadioSettings(Context context, byte[] settings) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("RadioSettings", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        // Convert the byte array to a Base64 string
+        String settingsEncoded = Base64.encodeToString(settings, Base64.DEFAULT);
+
+        // Save the encoded string
+        editor.putString("CC1101_Settings", settingsEncoded);
+        editor.apply();
+    }
+
+
+    private byte[] loadRadioSettings(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("RadioSettings", Context.MODE_PRIVATE);
+
+        // Retrieve the encoded settings string
+        String settingsEncoded = sharedPreferences.getString("CC1101_Settings", null);
+        if (settingsEncoded != null) {
+            // Decode the string back into a byte array
+            return Base64.decode(settingsEncoded, Base64.DEFAULT);
+        }
+        return null;
     }
 
     public void onStart() {
