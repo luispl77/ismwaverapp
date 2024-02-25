@@ -1,42 +1,44 @@
 package com.emwaver.ismwaver.ui.overview;
 
-import androidx.core.content.ContextCompat;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.lifecycle.ViewModelProvider;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.util.Base64;
+import android.provider.OpenableColumns;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.emwaver.ismwaver.CC1101;
-import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
 
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -49,6 +51,11 @@ public class OverviewFragment extends Fragment {
     private CC1101 cc;
     private final Handler handler = new Handler(Looper.getMainLooper()); // Handler on the main UI thread
     private boolean wasPreviouslyConnected = false;
+    private ActivityResultLauncher<Intent> createFileLauncher;
+    private ActivityResultLauncher<String[]> openFileLauncher;
+
+    private Uri currentUri = null;
+
 
     private final Runnable checkConnectionTask = new Runnable() {
         @Override
@@ -89,6 +96,8 @@ public class OverviewFragment extends Fragment {
 
         binding = FragmentOverviewBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+
+
 
         binding.frequencyHeader.setOnClickListener(v -> {
             // Toggle visibility
@@ -271,7 +280,29 @@ public class OverviewFragment extends Fragment {
         //endregion
 
 
+        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            if (uri != null) {
+                currentUri = uri;
+                // Update the TextView
+                binding.configFileTextView.setText(getFileName(uri));
+            }
+        });
 
+        createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    currentUri = uri;
+                    // Write the current configuration to the new file
+                    saveFile();
+                }
+            }
+        });
+
+        binding.openButton.setOnClickListener(v -> openFile());
+        binding.saveAsButton.setOnClickListener(v -> saveAsFile());
+        binding.saveButton.setOnClickListener(v -> saveFile());
+        binding.applyButton.setOnClickListener(v -> applyConfig());
 
         return root;
     }
@@ -357,30 +388,127 @@ public class OverviewFragment extends Fragment {
 
     }
 
-    private void saveRadioSettings(Context context, byte[] settings) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("RadioSettings", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        // Convert the byte array to a Base64 string
-        String settingsEncoded = Base64.encodeToString(settings, Base64.DEFAULT);
-
-        // Save the encoded string
-        editor.putString("CC1101_Settings", settingsEncoded);
-        editor.apply();
-    }
 
 
-    private byte[] loadRadioSettings(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("RadioSettings", Context.MODE_PRIVATE);
-
-        // Retrieve the encoded settings string
-        String settingsEncoded = sharedPreferences.getString("CC1101_Settings", null);
-        if (settingsEncoded != null) {
-            // Decode the string back into a byte array
-            return Base64.decode(settingsEncoded, Base64.DEFAULT);
+    private byte[] readAllBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = inputStream.read(data,  0, data.length)) != -1) {
+            buffer.write(data,  0, nRead);
         }
-        return null;
+        buffer.flush();
+        return buffer.toByteArray();
     }
+
+    public void saveAsFile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // Set MIME Type as per your requirement
+        intent.putExtra(Intent.EXTRA_TITLE, "myConf.conf");
+        createFileLauncher.launch(intent);
+    }
+
+    public void openFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
+        openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
+    }
+
+
+    public void saveFile() {
+        if (currentUri != null) {
+            try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(currentUri)) {
+                byte[] currentConfig = getConfigSettings(); // Placeholder for getting the current configuration
+                Log.i("currentConfig", Utils.bytesToHexString(currentConfig));
+                outputStream.write(currentConfig);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
+    private void applyConfig(){
+        if (currentUri != null) {
+            try (InputStream inputStream = getActivity().getContentResolver().openInputStream(currentUri)) {
+                byte[] fileContent = readAllBytes(inputStream);
+                Log.i("applyConfig", Utils.bytesToHexString(fileContent));
+                // Process the file content as needed
+                setConfigSettings(fileContent);
+                updateAccordionSettings();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else{
+            showToastOnUiThread("No file selected");
+        }
+    }
+
+
+    public byte[] getConfigSettings() {
+        // CC1101 configuration registers end at 0x2E, and PATABLE is 8 bytes long
+        byte configRegistersEnd = 0x2E;
+        int patableLength = 8;
+        // Read the configuration registers
+        byte[] configBytes = cc.readBurstReg((byte)0x00, configRegistersEnd + 1);
+        // Read the PATABLE
+        byte[] patableBytes = cc.readBurstReg(CC1101.CC1101_PATABLE, patableLength);
+        // Combine the two arrays
+        byte[] settings = new byte[configBytes.length + patableBytes.length];
+        System.arraycopy(configBytes, 0, settings, 0, configBytes.length);
+        System.arraycopy(patableBytes, 0, settings, configBytes.length, patableBytes.length);
+
+        return settings;
+    }
+
+    public void setConfigSettings(byte[] settings) {
+        byte configRegistersEnd = 0x2E;
+        int patableLength = 8;
+        // Ensure the settings array has the correct length
+        if (settings.length != (configRegistersEnd + 1 + patableLength)) {
+            // Handle error: the settings array does not have the expected length
+            return;
+        }
+        // Write configuration registers
+        byte[] configBytes = new byte[configRegistersEnd + 1];
+        System.arraycopy(settings, 0, configBytes, 0, configRegistersEnd + 1);
+        cc.writeBurstReg((byte)0x00, configBytes, (byte)(configRegistersEnd + 1));
+        // Write PATABLE
+        byte[] patableBytes = new byte[patableLength];
+        System.arraycopy(settings, configRegistersEnd + 1, patableBytes, 0, patableLength);
+        cc.writeBurstReg(CC1101.CC1101_PATABLE, patableBytes, (byte)patableLength);
+    }
+
+
+
+    private String getFileName(Uri uri) {
+        String displayName = "No file selected";
+        // Ensure getActivity() is not null
+        if (getActivity() != null) {
+            Cursor cursor = getActivity().getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    // Check if the column index is valid
+                    if (columnIndex != -1) {
+                        displayName = cursor.getString(columnIndex);
+                    }
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+        return displayName;
+    }
+
+
 
     public void onStart() {
         super.onStart();

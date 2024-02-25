@@ -31,6 +31,51 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Buttons for file operations -->
+    <Button
+        android:id="@+id/saveAsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save as"
+        app:layout_constraintEnd_toEndOf="@+id/openButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="Save"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/saveAsButton" />
+
+    <Button
+        android:id="@+id/openButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="Open"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/saveButton" />
+
+    <TextView
+        android:id="@+id/configFileTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="no file selected"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/openButton" />
+
+    <Button
+        android:id="@+id/applyButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="5dp"
+        android:text="Apply"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/configFileTextView" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -83,8 +128,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter frequency in MHz"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
 
                 </LinearLayout>
 
@@ -139,8 +184,8 @@
                         android:layout_weight="1"
                         android:hint="Enter ASK/FSK"
                         android:imeOptions="actionDone"
-                        android:maxLines="1"
-                        android:inputType="text" />
+                        android:inputType="text"
+                        android:maxLines="1" />
 
                 </LinearLayout>
 
@@ -194,8 +239,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter power in dBm"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -249,8 +294,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter bandwidth"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -270,8 +315,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter deviation"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -324,8 +369,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter LNA Gain"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -365,116 +410,128 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="Packet Format:" />
+
                     <EditText
                         android:id="@+id/packetFormatEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter Packet Format"
-                        android:inputType="text"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="text" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="Packet Length (#bytes):" />
+
                     <EditText
                         android:id="@+id/packetLengthEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter Packet Length"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="Preamble Length (#bytes):" />
+
                     <EditText
                         android:id="@+id/preambleLengthEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter Preamble Length"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="Sync Word:" />
+
                     <EditText
                         android:id="@+id/syncWordEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter 2-byte Sync Word"
-                        android:inputType="text"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="text" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="Sync Mode Detection:" />
+
                     <EditText
                         android:id="@+id/syncModeEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Select Sync Mode Detection"
-                        android:inputType="text"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="text" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
-                        android:text="Data Rate (kbit/s):"
+                        android:imeOptions="actionDone"
                         android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:text="Data Rate (kbit/s):" />
+
                     <EditText
                         android:id="@+id/dataRateEditText"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter Data Rate"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -519,8 +576,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
-                        android:text="GPIO 0 Function:"
-                        />
+                        android:text="GPIO 0 Function:" />
 
                     <EditText
                         android:id="@+id/gpio0EditText"
@@ -528,8 +584,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Select GPIO 0 function"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
 
                 </LinearLayout>
 
@@ -550,8 +606,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Select GPIO 2 function"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
 
                 </LinearLayout>
 
@@ -572,8 +628,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Enter FIFO Threshold"
-                        android:inputType="numberDecimal"
-                        android:imeOptions="actionDone"/>
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
 
                 </LinearLayout>
 
@@ -582,9 +638,6 @@
 
         </LinearLayout>
     </ScrollView>
-
-
-
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
