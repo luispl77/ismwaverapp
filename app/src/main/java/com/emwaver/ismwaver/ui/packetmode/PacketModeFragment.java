@@ -1,9 +1,11 @@
 package com.emwaver.ismwaver.ui.packetmode;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.text.InputFilter;
@@ -15,6 +17,8 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -24,6 +28,13 @@ import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentPacketModeBinding;
 import com.emwaver.ismwaver.CC1101;
 import com.emwaver.ismwaver.Utils;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Locale;
 
 public class PacketModeFragment extends Fragment {
 
@@ -42,6 +53,7 @@ public class PacketModeFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
+            updatePacketSettings();
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -49,6 +61,11 @@ public class PacketModeFragment extends Fragment {
             Log.i("service binding", "onServiceDisconnected");
         }
     };
+
+    private ActivityResultLauncher<Intent> createFileLauncher;
+    private ActivityResultLauncher<String[]> openFileLauncher;
+    private Uri currentUri = null;
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -70,6 +87,7 @@ public class PacketModeFragment extends Fragment {
         };
 
 
+        //region onClickListeners
         binding.sendTesla.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -284,25 +302,163 @@ public class PacketModeFragment extends Fragment {
             }).start();
         });
 
-        String[] syncmodes = getResources().getStringArray(R.array.sync_modes);
-        ArrayAdapter<String> syncmodeAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, syncmodes);
-        binding.syncModeSelector.setAdapter(syncmodeAdapter);
-        binding.syncModeSelector.setOnClickListener(v -> binding.syncModeSelector.showDropDown());
+        //endregion
 
-        binding.syncModeSelector.setOnItemClickListener((parent, view, position, id) -> {
-            new Thread(() -> {
-                // Handle the selection based on index
-                if(cc.setSyncMode((byte)position)) {
-                    showToastOnUiThread("Sync mode set successfully to index " + position);
-                } else {
-                    showToastOnUiThread("Failed to set sync mode");
+        binding.saveAsButton.setOnClickListener(v -> saveAsPacketFile());
+        binding.openButton.setOnClickListener(v -> openPacketFile());
+        binding.saveButton.setOnClickListener(v -> savePacketFile());
+
+
+        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            if (uri != null) {
+                currentUri = uri;
+                loadPacketFile(uri); // Function to read and apply settings from the file
+            }
+        });
+
+        createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    currentUri = uri;
+                    savePacketFile(); // Function to save the current settings to the file
                 }
-            }).start();
+            }
         });
 
 
         return root;
     }
+
+
+    public void updatePacketSettings() {
+        // Modulation
+        int modulation = cc.getModulation();
+        binding.modulationSelector.setText(modulation == 0 ? "FSK" : "ASK");
+        // Deviation
+        double deviation = cc.getDeviation();
+        binding.deviationTextInput.setText(String.valueOf(deviation));
+        // Data Rate
+        int dataRate = cc.getDataRate();
+        binding.datarateTextInput.setText(String.valueOf(dataRate));
+        // Packet Length
+        int pktLength = cc.getPktLength();
+        binding.packetLengthEditText.setText(String.valueOf(pktLength));
+        // Preamble Length
+        int preambleLength = cc.getPreambleLength();
+        binding.preambleSelector.setText(String.valueOf(preambleLength));
+        // Sync Word
+        byte[] syncWord = cc.getSyncWord();
+        binding.syncwordTextInput.setText(Utils.bytesToHexString(syncWord));
+    }
+
+    public void savePacketFile() {
+        if (currentUri != null) {
+            try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(currentUri)) {
+                byte[] packetConfig = getPacketConfig(); // Method to gather current packet settings and payload
+                outputStream.write(packetConfig);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void saveAsPacketFile() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_TITLE, "newPacket.packet");
+        createFileLauncher.launch(intent);
+    }
+
+    public void openPacketFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        openFileLauncher.launch(new String[]{"*/*"});
+    }
+
+    private void loadPacketFile(Uri uri) {
+        try (InputStream inputStream = getActivity().getContentResolver().openInputStream(uri)) {
+            byte[] fileContent = readAllBytes(inputStream); // Utility method to read all bytes from InputStream
+            setPacketSettings(fileContent); // Parses and applies settings to CC1101 and UI
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public byte[] getPacketConfig() {
+        // Read settings from CC1101 registers
+        byte[] settings = new byte[]{
+                cc.readReg(CC1101.CC1101_SYNC1),
+                cc.readReg(CC1101.CC1101_SYNC0),
+                cc.readReg(CC1101.CC1101_PKTLEN),
+                cc.readReg(CC1101.CC1101_PKTCTRL0),
+                cc.readReg(CC1101.CC1101_MDMCFG4),
+                cc.readReg(CC1101.CC1101_MDMCFG3),
+                cc.readReg(CC1101.CC1101_MDMCFG2),
+                cc.readReg(CC1101.CC1101_MDMCFG1),
+                cc.readReg(CC1101.CC1101_DEVIATN),
+        };
+
+        // Obtain payload from UI
+        String payloadHex = binding.transmitPayloadDataTextInput.getText().toString();
+        byte[] payload = Utils.convertHexStringToByteArray(payloadHex);
+
+        // Combine settings and payload
+        byte[] packetConfig = new byte[settings.length + payload.length];
+        System.arraycopy(settings, 0, packetConfig, 0, settings.length);
+        System.arraycopy(payload, 0, packetConfig, settings.length, payload.length);
+        Log.i("getPacketConfig", Utils.bytesToHexString(packetConfig));
+        return packetConfig;
+    }
+
+
+    private void setPacketSettings(byte[] config) {
+        if (config.length < 9) { // Check if the config array includes all the required settings
+            Log.e("PacketModeFragment", "Config data too short");
+            return;
+        }
+
+        // Write settings to CC1101 registers
+        cc.writeReg(CC1101.CC1101_SYNC1, config[0]);
+        cc.writeReg(CC1101.CC1101_SYNC0, config[1]);
+        cc.writeReg(CC1101.CC1101_PKTLEN, config[2]);
+        cc.writeReg(CC1101.CC1101_PKTCTRL0, config[3]);
+        cc.writeReg(CC1101.CC1101_MDMCFG4, config[4]);
+        cc.writeReg(CC1101.CC1101_MDMCFG3, config[5]);
+        cc.writeReg(CC1101.CC1101_MDMCFG2, config[6]);
+        cc.writeReg(CC1101.CC1101_MDMCFG1, config[7]);
+        cc.writeReg(CC1101.CC1101_DEVIATN, config[8]);
+
+        // Extract payload from the config array
+        byte[] payload = Arrays.copyOfRange(config, 9, config.length);
+
+        // Update payload EditText in UI
+        final String payloadHex = Utils.bytesToHexString(payload);
+        getActivity().runOnUiThread(() -> binding.transmitPayloadDataTextInput.setText(payloadHex));
+
+        // Call updatePacketSettings to refresh UI with the new settings
+        updatePacketSettings();
+    }
+
+
+    private byte[] readAllBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[1024];
+        while ((nRead = inputStream.read(data,  0, data.length)) != -1) {
+            buffer.write(data,  0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
+
+
+
+
+
+
 
     @Override
     public void onStart() {

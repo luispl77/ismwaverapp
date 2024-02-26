@@ -664,7 +664,7 @@ public class CC1101 {
         return readReg(CC1101_PKTLEN) == pktlen;
     }
     public int getPktLength(){
-        return readReg(CC1101_PKTLEN);
+        return readReg(CC1101_PKTLEN) & 0xFF;
     }
 
     public int getPacketFormat() {
