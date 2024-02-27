@@ -31,6 +31,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
 import com.emwaver.ismwaver.USBService;
+import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentFlashBinding;
 
 import java.util.Arrays;
@@ -93,6 +94,7 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
 
         status = binding.status;
 
+        Utils.changeStatus("", getContext());
         binding.connectButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {

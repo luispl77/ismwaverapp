@@ -76,6 +76,8 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
+        Utils.changeStatus("*myScript.js", getContext());
+
         binding.consoleWindowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
         // Observe the LiveData and update the UI accordingly

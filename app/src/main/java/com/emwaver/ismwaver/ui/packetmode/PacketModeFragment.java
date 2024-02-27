@@ -2,12 +2,15 @@ package com.emwaver.ismwaver.ui.packetmode;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.OpenableColumns;
 import android.text.InputFilter;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -20,6 +23,8 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -53,7 +58,8 @@ public class PacketModeFragment extends Fragment {
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
-            updatePacketSettings();
+            if(USBService.checkConnection())
+                updatePacketSettings();
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -86,6 +92,7 @@ public class PacketModeFragment extends Fragment {
             return null;
         };
 
+        Utils.updateStatusBarFile(this);
 
         //region onClickListeners
         binding.sendTesla.setOnClickListener(new View.OnClickListener() {
@@ -295,6 +302,7 @@ public class PacketModeFragment extends Fragment {
             new Thread(() -> {
                 // Handle the selection based on index
                 if(cc.setPreambleLength(position)) {
+
                     showToastOnUiThread("Preamble set successfully to index " + position);
                 } else {
                     showToastOnUiThread("Failed to set preamble");
@@ -311,8 +319,8 @@ public class PacketModeFragment extends Fragment {
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
-                currentUri = uri;
                 loadPacketFile(uri); // Function to read and apply settings from the file
+                Utils.updateStatusBarFile(this, uri);
             }
         });
 
@@ -353,15 +361,23 @@ public class PacketModeFragment extends Fragment {
     }
 
     public void savePacketFile() {
-        if (currentUri != null) {
-            try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(currentUri)) {
+        // Retrieve the URI for this fragment from the Utils.STATUS_BAR_URIS map
+        Uri uri = Utils.STATUS_BAR_URIS.get(this.getClass().getName());
+
+        if (uri != null) {
+            try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(uri)) {
                 byte[] packetConfig = getPacketConfig(); // Method to gather current packet settings and payload
                 outputStream.write(packetConfig);
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            // Handle the case where the URI is not set or not found in the map
+            Log.e("SavePacketFile", "No URI found for this fragment.");
+            saveAsPacketFile();
         }
     }
+
 
     public void saveAsPacketFile() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -386,6 +402,8 @@ public class PacketModeFragment extends Fragment {
             e.printStackTrace();
         }
     }
+
+
 
     public byte[] getPacketConfig() {
         // Read settings from CC1101 registers
@@ -453,7 +471,6 @@ public class PacketModeFragment extends Fragment {
         buffer.flush();
         return buffer.toByteArray();
     }
-
 
 
 

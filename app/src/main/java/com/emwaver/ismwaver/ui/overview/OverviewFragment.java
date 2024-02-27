@@ -97,7 +97,7 @@ public class OverviewFragment extends Fragment {
         binding = FragmentOverviewBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-
+        Utils.changeStatus("*myConf.conf", getContext());
 
         binding.frequencyHeader.setOnClickListener(v -> {
             // Toggle visibility
