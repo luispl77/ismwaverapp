@@ -76,7 +76,7 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
-        Utils.changeStatus("*myScript.js", getContext());
+        Utils.updateStatusBarFile(this);
 
         binding.consoleWindowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
@@ -119,7 +119,7 @@ public class ConsoleFragment extends Fragment {
                     try {
                         String jsCode = binding.jsCodeInput.getText().toString();
                         ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
-                        Utils.changeStatus("Running script...", getContext());
+                        //Utils.changeStatus("Running script...", getContext());
                         String result = scriptsEngine.executeJavaScript(jsCode);
                         Console.print("\n<Console>");
                         if(result != null){
@@ -127,7 +127,7 @@ public class ConsoleFragment extends Fragment {
                         }
                     } finally {
                         unbindServiceIfNeeded();
-                        Utils.changeStatus("", getContext());
+                        //Utils.changeStatus("", getContext());
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {

@@ -63,21 +63,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private final BroadcastReceiver statusReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(Constants.ACTION_UPDATE_STATUS)) {
-                String status = intent.getStringExtra("status");
-                updateActionBarStatus(status);
-            }
-        }
-    };
-
     @Override
     protected void onResume() {
         super.onResume();
-        IntentFilter filter = new IntentFilter(Constants.ACTION_UPDATE_STATUS);
-        registerReceiver(statusReceiver, filter);
         //Log.i("onResume", "registerReceiver");
         if (isBound) {
             // Check for already present devices & connect
@@ -106,14 +94,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(statusReceiver);
-    }
-
-    public void updateActionBarStatus(String status) {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setSubtitle(status); // Or use setTitle() if you prefer
-        }
     }
 
 

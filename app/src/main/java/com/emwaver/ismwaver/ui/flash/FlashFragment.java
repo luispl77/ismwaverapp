@@ -94,7 +94,7 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
 
         status = binding.status;
 
-        Utils.changeStatus("", getContext());
+        //Utils.changeStatus("", getContext());
         binding.connectButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {

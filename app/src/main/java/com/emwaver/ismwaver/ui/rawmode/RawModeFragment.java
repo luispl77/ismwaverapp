@@ -104,7 +104,7 @@ public class RawModeFragment extends Fragment {
 
         chart = binding.chart;
 
-        Utils.changeStatus("*mySignal.raw", getContext());
+        Utils.updateStatusBarFile(this);
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 

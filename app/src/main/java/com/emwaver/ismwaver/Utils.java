@@ -26,7 +26,6 @@ public class Utils {
 
     public static final Map<String, Uri> STATUS_BAR_URIS = new HashMap<>();
 
-
     public void delay(int delay_ms) {
         try {
             Thread.sleep(delay_ms);
@@ -98,14 +97,6 @@ public class Utils {
         hexString.append("]");
         return hexString.toString();
     }
-
-    public static void changeStatus(String status, Context context) {
-        Intent intent = new Intent(Constants.ACTION_UPDATE_STATUS);
-        // Convert the message to bytes
-        intent.putExtra("status", status);
-        context.sendBroadcast(intent);
-    }
-
 
     public static void updateStatusBarFile(Fragment fragment, Uri uri) {
         // Store the URI against the fragment's class name

@@ -5,9 +5,6 @@ public class Constants {
     public static final String ACTION_CONNECT_USB = "com.emwaver.ACTION_CONNECT_USB";
     public static final String ACTION_CONNECT_USB_BOOTLOADER = "com.emwaver.GRANT_USB";
 
-    // Action string for the status bar message
-    public static final String ACTION_UPDATE_STATUS = "com.emwaver.UPDATE_STATUS";
-
     // Any other constant values that are used across multiple classes
     public static final int USB_BAUD_RATE = 115200;
 
