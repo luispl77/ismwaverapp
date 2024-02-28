@@ -12,6 +12,9 @@ import android.os.IBinder;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -22,11 +25,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.emwaver.ismwaver.Constants;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentConsoleBinding;
 import com.emwaver.ismwaver.CC1101;
@@ -76,6 +81,35 @@ public class ConsoleFragment extends Fragment {
         binding = FragmentConsoleBinding.inflate(inflater, container, false);
         View root = binding.getRoot(); // inflate fragment_terminal.xml
 
+        MenuHost menuHost = requireActivity();
+        menuHost.addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.console_menu, menu);
+            }
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+                if (itemId == R.id.open) {
+                    openFile();
+                    return true;
+                } else if (itemId == R.id.save) {
+                    saveFile();
+                    return true;
+                } else if (itemId == R.id.save_as) {
+                    saveAsFile();
+                    return true;
+                } else if (itemId == R.id.execute) {
+                    executeScript();
+                    return true;
+                } else if (itemId == R.id.clear) {
+                    clearConsole();
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+
         Utils.updateStatusBarFile(this);
 
         binding.consoleWindowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
@@ -95,52 +129,7 @@ public class ConsoleFragment extends Fragment {
 
         utils = new Utils();
 
-
-        binding.saveFileAsButton.setOnClickListener(v -> {
-            buttonCreateFile();
-        });
-
-        binding.saveFileButton.setOnClickListener(v -> {
-            buttonSaveFile();
-        });
-
-        binding.openFileButton.setOnClickListener(v -> {
-            buttonOpenFile();
-        });
-
-        binding.executeScriptButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Disable the clear button
-                binding.clearButton.setEnabled(false);
-                // Optionally, change the button color to grey to indicate it's disabled
-                binding.clearButton.setBackgroundColor(Color.GRAY); // Use an appropriate color
-                new Thread(() -> {
-                    try {
-                        String jsCode = binding.jsCodeInput.getText().toString();
-                        ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
-                        //Utils.changeStatus("Running script...", getContext());
-                        String result = scriptsEngine.executeJavaScript(jsCode);
-                        Console.print("\n<Console>");
-                        if(result != null){
-                            Console.print(result);
-                        }
-                    } finally {
-                        unbindServiceIfNeeded();
-                        //Utils.changeStatus("", getContext());
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                binding.clearButton.setEnabled(true);
-                                // Optionally, reset the button color to indicate it's enabled
-                                binding.clearButton.setBackgroundColor(Color.BLUE); // Reset to original color
-                            }
-                        });
-                    }
-                }).start();
-            }
-        });
-
+        /*
         binding.consoleTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String userInput = terminalTextInput.getText().toString();
@@ -149,22 +138,11 @@ public class ConsoleFragment extends Fragment {
             }
             return false;
         });
+        */
 
 
-        binding.clearButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                consoleViewModel.clearWindowData();
-                consoleViewModel.appendData("<Console>");
-            }
-        });
 
-        binding.connectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                USBService.connectUSBSerial();
-            }
-        });
+
 
 
 
@@ -185,6 +163,41 @@ public class ConsoleFragment extends Fragment {
         });
 
         return root;
+    }
+
+    private void executeScript(){
+        // Disable the clear button
+        //binding.clearButton.setEnabled(false);
+        // Optionally, change the button color to grey to indicate it's disabled
+        //binding.clearButton.setBackgroundColor(Color.GRAY); // Use an appropriate color
+        new Thread(() -> {
+            try {
+                String jsCode = binding.jsCodeInput.getText().toString();
+                ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
+                //Utils.changeStatus("Running script...", getContext());
+                String result = scriptsEngine.executeJavaScript(jsCode);
+                Console.print("\n<Console>");
+                if(result != null){
+                    Console.print(result);
+                }
+            } finally {
+                unbindServiceIfNeeded();
+                //Utils.changeStatus("", getContext());
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //binding.clearButton.setEnabled(true);
+                        // Optionally, reset the button color to indicate it's enabled
+                        //binding.clearButton.setBackgroundColor(Color.BLUE); // Reset to original color
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void clearConsole(){
+        consoleViewModel.clearWindowData();
+        consoleViewModel.appendData("<Console>");
     }
 
     private void unbindServiceIfNeeded() {
@@ -219,7 +232,7 @@ public class ConsoleFragment extends Fragment {
         binding = null; // Important for avoiding memory leaks
     }
 
-    public void buttonCreateFile() {
+    public void saveAsFile() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // Set MIME Type as per your requirement
@@ -228,14 +241,14 @@ public class ConsoleFragment extends Fragment {
         createFileLauncher.launch(intent);
     }
 
-    public void buttonOpenFile() {
+    public void openFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
         openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
     }
 
-    public void buttonSaveFile() {
+    public void saveFile() {
         writeChangesToFile();
     }
 

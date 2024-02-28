@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/apply"
+        android:icon="@drawable/ai_accept"
+        android:title="Apply"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/open"
+        android:title="Open" />
+    <item
+        android:id="@+id/save"
+        android:title="Save" />
+    <item
+        android:id="@+id/save_as"
+        android:title="Save As" />
+    <item
+        android:id="@+id/settings"
+        android:title="Settings" />
+</menu>

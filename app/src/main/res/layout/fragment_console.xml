@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.console.ConsoleFragment">
+    tools:context=".ui.console.ConsoleFragment"
+    android:background="#003D99">
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/middle_guideline"
@@ -14,126 +15,87 @@
         app:layout_constraintGuide_begin="366dp" />
 
 
-    <ScrollView
-        android:id="@+id/scrollView2"
+
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/saveFileAsButton"
+        app:layout_constraintBottom_toTopOf="@+id/middle_guideline"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="8dp"
+        android:layout_marginRight="2dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginLeft="2dp"
+        android:layout_marginBottom="2dp">
 
-        <HorizontalScrollView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+        <ScrollView
+            android:id="@+id/scrollView2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF">
 
-            <EditText
-                android:id="@+id/jsCodeInput"
+            <HorizontalScrollView
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:autofillHints="null"
-                android:fontFamily="monospace"
-                android:gravity="start|top"
-                android:inputType="textMultiLine|textNoSuggestions"
-                android:padding="16dp"
-                android:scrollHorizontally="true"
-                android:text=""
-                android:textSize="11sp"
-                tools:ignore="LabelFor" />
+                android:layout_height="wrap_content">
 
-        </HorizontalScrollView>
-    </ScrollView>
+                <EditText
+                    android:id="@+id/jsCodeInput"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:autofillHints="null"
+                    android:fontFamily="monospace"
+                    android:gravity="start|top"
+                    android:inputType="textMultiLine|textNoSuggestions"
+                    android:padding="16dp"
+                    android:scrollHorizontally="true"
+                    android:text=""
+                    android:textSize="11sp"
+                    android:textColor="#003D99"
+                    android:hint="JS"
+                    android:textColorHint="#FFFFFF"
+                    tools:ignore="LabelFor" />
 
+            </HorizontalScrollView>
+        </ScrollView>
+    </androidx.cardview.widget.CardView>
 
-    <Button
-        android:id="@+id/saveFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="save"
-        app:layout_constraintBottom_toTopOf="@+id/middle_guideline"
-        app:layout_constraintStart_toEndOf="@+id/saveFileAsButton" />
-
-    <Button
-        android:id="@+id/saveFileAsButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="save as"
-        app:layout_constraintBottom_toTopOf="@+id/middle_guideline"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/openFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="open"
-        app:layout_constraintBottom_toTopOf="@+id/middle_guideline"
-        app:layout_constraintStart_toEndOf="@+id/saveFileButton" />
-
-
-    <Button
-        android:id="@+id/executeScriptButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Execute"
-        app:layout_constraintStart_toEndOf="@+id/clearButton"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-
-    <!-- Connect Button at the top -->
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/connect"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-
-    <!-- Clear Button at the top -->
-
-    <!-- Serial Output TextView -->
-    <Button
-        android:id="@+id/clearButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/clear"
-        app:layout_constraintStart_toEndOf="@+id/connectButton"
-        app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-
-
-    <ScrollView
-        android:id="@+id/consoleWindowScrollView"
+    <androidx.cardview.widget.CardView
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/consoleTextInput"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/clearButton">
-
-        <TextView
-            android:id="@+id/consoleWindowText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="vertical"
-            android:textColor="@color/blue_lighter"
-            app:layout_constraintTop_toTopOf="@+id/middle_guideline" />
-    </ScrollView>
-
-
-    <!-- User Input EditText -->
-    <EditText
-        android:id="@+id/consoleTextInput"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="#EEE"
-        android:hint="@string/enter_command"
-        android:imeOptions="actionDone"
-        android:inputType="text"
-        android:padding="8dp"
-        android:textColor="#000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/middle_guideline"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="8dp"
+        android:layout_marginRight="2dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginLeft="2dp"
+        android:layout_marginBottom="2dp">
+
+        <ScrollView
+            android:id="@+id/consoleWindowScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000000">
+
+            <TextView
+                android:id="@+id/consoleWindowText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="vertical"
+                android:textColor="#00FF00"
+                android:layout_marginRight="2dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginLeft="2dp"
+                android:layout_marginBottom="2dp"/>
+        </ScrollView>
+    </androidx.cardview.widget.CardView>
+
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,6 +2,11 @@ package com.emwaver.ismwaver.ui.overview;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
 import android.app.Activity;
@@ -24,6 +29,9 @@ import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -31,6 +39,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.emwaver.ismwaver.CC1101;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentOverviewBinding;
@@ -96,6 +105,36 @@ public class OverviewFragment extends Fragment {
 
         binding = FragmentOverviewBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+
+        MenuHost menuHost = requireActivity();
+        menuHost.addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.overview_menu, menu);
+            }
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+                if (itemId == R.id.open) {
+                    openFile();
+                    return true;
+                } else if (itemId == R.id.save) {
+                    saveFile();
+                    return true;
+                } else if (itemId == R.id.save_as) {
+                    saveAsFile();
+                    return true;
+                } else if (itemId == R.id.settings) {
+                    // Implement your settings logic here
+                    return true;
+                } else if (itemId == R.id.apply) {
+                    applyConfig();
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+
 
         Utils.updateStatusBarFile(this);
 
@@ -298,11 +337,6 @@ public class OverviewFragment extends Fragment {
                 }
             }
         });
-
-        binding.openButton.setOnClickListener(v -> openFile());
-        binding.saveAsButton.setOnClickListener(v -> saveAsFile());
-        binding.saveButton.setOnClickListener(v -> saveFile());
-        binding.applyButton.setOnClickListener(v -> applyConfig());
 
         return root;
     }
@@ -507,6 +541,7 @@ public class OverviewFragment extends Fragment {
         }
         return displayName;
     }
+
 
 
 

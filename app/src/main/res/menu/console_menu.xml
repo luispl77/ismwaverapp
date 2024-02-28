@@ -1,0 +1,24 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/clear"
+        android:icon="@drawable/ai_discard"
+        android:title="Clear"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/execute"
+        android:icon="@drawable/ai_play"
+        android:title="Execute"
+        android:orderInCategory="100"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/open"
+        android:title="Open" />
+    <item
+        android:id="@+id/save"
+        android:title="Save" />
+    <item
+        android:id="@+id/save_as"
+        android:title="Save As" />
+</menu>

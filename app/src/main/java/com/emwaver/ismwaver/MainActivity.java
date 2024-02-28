@@ -9,6 +9,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Menu;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -62,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
         startService(serviceIntent);
 
     }
+
+
 
     @Override
     protected void onResume() {
