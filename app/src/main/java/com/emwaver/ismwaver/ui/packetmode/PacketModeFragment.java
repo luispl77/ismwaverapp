@@ -1,18 +1,32 @@
 package com.emwaver.ismwaver.ui.packetmode;
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.text.Editable;
 import android.text.InputFilter;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextWatcher;
+import android.text.style.BackgroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -20,12 +34,31 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.CommandSender;
+import com.emwaver.ismwaver.OtherOptionActivity;
 import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.SerialService;
+import com.emwaver.ismwaver.SettingsActivity;
 import com.emwaver.ismwaver.databinding.FragmentPacketModeBinding;
 import com.emwaver.ismwaver.jsobjects.CC1101;
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
+import com.github.mikephil.charting.listener.ChartTouchListener;
+import com.github.mikephil.charting.listener.OnChartGestureListener;
+import com.github.mikephil.charting.renderer.LineChartRenderer;
 
-public class PacketModeFragment extends Fragment implements CommandSender {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public class PacketModeFragment extends Fragment implements CommandSender, OnSelectionChangedListener {
 
     private FragmentPacketModeBinding binding;
 
@@ -34,6 +67,13 @@ public class PacketModeFragment extends Fragment implements CommandSender {
     private CC1101 cc;
     private SerialService serialService;
     private boolean isServiceBound = false;
+
+    private LineChart chart;
+    List<Entry> entries;
+    private String modulationSelected;
+    private int dataRate;
+    private String preambleSelected;
+
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -49,10 +89,13 @@ public class PacketModeFragment extends Fragment implements CommandSender {
         }
     };
 
+    @SuppressLint("ClickableViewAccessibility")
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
         packetModeViewModel = new ViewModelProvider(this).get(PacketModeViewModel.class);
+
+        setHasOptionsMenu(true);
 
         cc = new CC1101(this);
 
@@ -68,6 +111,9 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             return null;
         };
 
+        Button showGraph = binding.showGraph;
+
+        chart = binding.chart;
 
         binding.sendTesla.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -98,14 +144,13 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             }
         });
 
-
         binding.datarateTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 new Thread(() -> {
                     String dataRateStr = binding.datarateTextInput.getText().toString();
                     // Parse the string to an integer
                     try {
-                        int dataRate = Integer.parseInt(dataRateStr);
+                        dataRate = Integer.parseInt(dataRateStr);
 
                         // Now use dataRate to set the data rate
                         if (cc.setDataRate(dataRate)) {
@@ -144,7 +189,6 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             return false; // Pass the event on to other listeners
         });
 
-
         binding.syncwordTextInput.setFilters(new InputFilter[]{hexFilter});
         binding.syncwordTextInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -172,9 +216,6 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             return false;
         });
 
-
-
-
         binding.initTransmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -196,6 +237,7 @@ public class PacketModeFragment extends Fragment implements CommandSender {
         });
 
         binding.receivePayloadDataTextInput.setFilters(new InputFilter[]{hexFilter});
+
         // Set an OnClickListener for the button
         binding.sendPayloadButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -243,16 +285,16 @@ public class PacketModeFragment extends Fragment implements CommandSender {
 
         binding.modulationSelector.setOnItemClickListener((parent, view, position, id) -> {
             // Get the selected item
-            String selectedItem = (String) parent.getItemAtPosition(position);
+            modulationSelected = (String) parent.getItemAtPosition(position);
             new Thread(() -> {
                 // Handle the selection
-                if ("ASK".equals(selectedItem)) {
+                if ("ASK".equals(modulationSelected)) {
                     if(cc.setModulation(CC1101.MOD_ASK)){
                         showToastOnUiThread("modulation set successfully to ASK");
                     }
                     else
                         showToastOnUiThread("Failed to set modulation");
-                } else if ("FSK".equals(selectedItem)) {
+                } else if ("FSK".equals(modulationSelected)) {
                     if(cc.setModulation(CC1101.MOD_2FSK)){
                         showToastOnUiThread("modulation set successfully to 2FSK");
                     }
@@ -262,17 +304,13 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             }).start();
         });
 
-
-
-
-
-
         String[] preambles = getResources().getStringArray(R.array.preambles);
         ArrayAdapter<String> preamblesAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, preambles);
         binding.preambleSelector.setAdapter(preamblesAdapter);
         binding.preambleSelector.setOnClickListener(v -> binding.preambleSelector.showDropDown());
 
         binding.preambleSelector.setOnItemClickListener((parent, view, position, id) -> {
+            preambleSelected = (String) parent.getItemAtPosition(position);
             new Thread(() -> {
                 // Handle the selection based on index
                 if(cc.setNumPreambleBytes(position)) {
@@ -299,9 +337,121 @@ public class PacketModeFragment extends Fragment implements CommandSender {
             }).start();
         });
 
+        binding.receivePayloadDataTextInput.addTextChangedListener(new TextWatcher() {
+
+            //#region "Not Used/Implemented Functions"
+
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable editable) { }
+
+            //#endregion
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int start, int before, int count) {
+                if (charSequence.length() > 0)
+                    showGraph.setVisibility(View.VISIBLE);
+                else
+                    showGraph.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        binding.receivePayloadDataTextInput.setOnSelectionChangedListener(this);
+
+        showGraph.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String hexString = preambleSelected + binding.syncwordTextInput.getText().toString() + binding.receivePayloadDataTextInput.getText().toString();
+                String bitString = hexToBinary(hexString);
+
+                createWaveModulation(bitString);
+
+                configureChart(entries);
+
+                //SpannableString spannableString = new SpannableString(binding.receivePayloadDataTextInput.getText().toString());
+                //BackgroundColorSpan highlightSpan = new BackgroundColorSpan(Color.YELLOW);
+                //spannableString.setSpan(highlightSpan, 0, binding.receivePayloadDataTextInput.getText().toString().length(), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+
+                //binding.receivePayloadDataTextInput.setText(spannableString);
+            }
+        });
+
+        chart.setOnChartGestureListener(new OnChartGestureListener() {
+
+            //#region "Not Used/Implemented Functions"
+
+            @Override
+            public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) { }
+
+            @Override
+            public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) { }
+
+            //#endregion
+
+            @Override
+            public void onChartLongPressed(MotionEvent me) {
+                highlightText();
+            }
+
+            @Override
+            public void onChartDoubleTapped(MotionEvent me) {
+                highlightText();
+            }
+
+            @Override
+            public void onChartSingleTapped(MotionEvent me) {
+                highlightText();
+            }
+
+            @Override
+            public void onChartFling(MotionEvent me1, MotionEvent me2, float velocityX, float velocityY) {
+                highlightText();
+            }
+
+            @Override
+            public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
+                highlightText();
+            }
+
+            @Override
+            public void onChartTranslate(MotionEvent me, float dX, float dY) {
+                highlightText();
+            }
+        });
 
         return root;
     }
+
+
+
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.settings_menu, menu); // Inflate your menu resource
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_settings){
+            Intent intent = new Intent(getContext(), SettingsActivity.class);
+            startActivity(intent);
+
+            return true;
+        } else if (id == R.id.action_otherOption) {
+            Intent intent = new Intent(getContext(), OtherOptionActivity.class);
+            startActivity(intent);
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item); // Important line
+    }
+
+    //#region "Override Public Functions - View"
 
     @Override
     public void onStart() {
@@ -318,8 +468,113 @@ public class PacketModeFragment extends Fragment implements CommandSender {
         binding = null;
     }
 
+    //#endregion
 
+    //#region "Private Functions - Graph"
 
+    private static String hexToBinary(String hexData) {
+        StringBuilder binaryResult = new StringBuilder();
+
+        for (int i = 0; i < hexData.length(); i++) {
+            char hexChar = hexData.charAt(i);
+            int decimalValue = Integer.parseInt(String.valueOf(hexChar), 16);
+            StringBuilder binaryValue = new StringBuilder(Integer.toBinaryString(decimalValue));
+
+            while (binaryValue.length() < 4) {
+                binaryValue.insert(0, "0");
+            }
+
+            binaryResult.append(binaryValue);
+        }
+
+        return binaryResult.toString();
+    }
+
+    private void createWaveModulation(String bitString) {
+        int bitrate = (int) (Math.pow(10, 6) / dataRate);
+
+        entries = new ArrayList<>();
+
+        float x = 0;
+        float y;
+        for (int i = 0; i < bitString.length(); i++) {
+            char bit = bitString.charAt(i);
+
+            for (int j = 0; j <= bitrate; j += 1) {
+                if (bit == '1'){
+                    y = (float) Math.sin(2 * Math.PI * x / (float) (bitrate / 5));
+                }
+                else {
+                    y = (Objects.equals(modulationSelected, "ASK")) ? 0 : (float) Math.sin(2 * Math.PI * x / (float) (bitrate / 10));
+                }
+
+                entries.add(new Entry(x, y));
+                x += 1;
+            }
+
+            x -= 1;
+        }
+    }
+
+    private void configureChart(List<Entry> entries) {
+        LineDataSet dataSet = new LineDataSet(entries, "Sinal Wave");
+        dataSet.setColor(Color.CYAN);
+        dataSet.setDrawValues(false);
+        dataSet.setDrawCircles(false);
+        dataSet.setLineWidth(2f);
+
+        LineData lineData = new LineData(dataSet);
+        chart.setData(lineData);
+
+        chart.getDescription().setEnabled(false);
+        chart.setTouchEnabled(true);
+        chart.setDragEnabled(true);
+        chart.setScaleEnabled(true);
+        chart.setHorizontalScrollBarEnabled(true);
+
+        // region "xAxis Setup"
+
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getAxisLabel(float value, AxisBase axis) {
+                return String.valueOf((int) value);
+            }
+        });
+
+        // endregion
+
+        // region "yAxis Setup"
+
+        YAxis yAxisLeft = chart.getAxisLeft();
+        yAxisLeft.setAxisMinimum((float) -1.2);
+        yAxisLeft.setAxisMaximum((float) 1.2);
+
+        YAxis yAxisRight = chart.getAxisRight();
+        yAxisRight.setAxisMinimum((float) -1.2);
+        yAxisRight.setAxisMaximum((float) 1.2);
+
+        // endregion
+
+        chart.invalidate();
+    }
+
+    private void highlightText(){
+        SpannableString spannableString = new SpannableString(binding.receivePayloadDataTextInput.getText().toString());
+        BackgroundColorSpan highlightSpan = new BackgroundColorSpan(Color.YELLOW);
+
+        int start = (int) Math.ceil(chart.getLowestVisibleX()/2000);
+        int end = (int) Math.ceil(chart.getHighestVisibleX()/2000);
+
+        if (start == 0 || start == 1)
+            start = 2;
+
+        spannableString.setSpan(highlightSpan, start - 2, end - 2, Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+        binding.receivePayloadDataTextInput.setText(spannableString);
+    }
+
+    //#endregion
 
     public void showToastOnUiThread(final String message) {
         if (isAdded()) { // Check if Fragment is currently added to its activity
@@ -358,5 +613,16 @@ public class PacketModeFragment extends Fragment implements CommandSender {
         return response;
     }
 
+    @Override
+    public void onTextSelected(int start, int end) {
+        int bitrate = (int) (Math.pow(10, 6) / dataRate);
 
+        if (end != 0 && end != start) {
+            chart.setVisibleXRangeMaximum((end + 9) * bitrate);
+            chart.moveViewToX((start + 4) * bitrate);
+            chart.invalidate();
+        } else if (start != 0 && end != 0) {
+            chart.fitScreen();
+        }
+    }
 }

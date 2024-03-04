@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/packetModeFragment">
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     tools:context=".ui.packetmode.PacketModeFragment">
-
 
     <Button
         android:id="@+id/sendTesla"
@@ -146,10 +150,9 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
-    <EditText
+    <com.emwaver.ismwaver.ui.packetmode.SelectionAwareEditText
         android:id="@+id/receivePayloadDataTextInput"
-        android:layout_width="411dp"
+        android:layout_width="match_parent"
         android:layout_height="100dp"
         android:background="#EEE"
         android:gravity="top|start"
@@ -162,9 +165,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/datarateTextInput" />
 
+    <!--<EditText
+        android:id="@+id/receivePayloadDataTextInput"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="#EEE"
+        android:gravity="top|start"
+        android:hint="Hex data received..."
+        android:inputType="textMultiLine"
+        android:padding="8dp"
+        android:scrollbars="vertical"
+        android:textColor="#000"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/datarateTextInput" />-->
+
     <EditText
         android:id="@+id/transmitPayloadDataTextInput"
-        android:layout_width="411dp"
+        android:layout_width="match_parent"
         android:layout_height="100dp"
         android:background="#EEE"
         android:gravity="top|start"
@@ -177,5 +195,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sendPayloadButton" />
 
+    <Button
+        android:id="@+id/showGraph"
+        android:layout_width="120dp"
+        android:layout_height="55dp"
+        android:text="show graph"
+        android:layout_marginRight="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/transmitPayloadDataTextInput"
+        android:visibility="invisible" />
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/chart"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/transferPayloadTxButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

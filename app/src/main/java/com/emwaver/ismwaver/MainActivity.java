@@ -4,16 +4,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.preference.PreferenceManager;
 
 import com.emwaver.ismwaver.databinding.ActivityMainBinding;
+import com.emwaver.ismwaver.ui.packetmode.PacketModeFragment;
 import com.emwaver.ismwaver.ui.terminal.TerminalViewModel;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,10 +41,15 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
 
+        Intent intent = getIntent();
+        String value = intent.getStringExtra("message");
+        if ("BackToPacketModeFragment".equals(value)) {
+            navController.navigate(R.id.navigation_packetmode);
+            intent.removeExtra("message");
+        }
 
         Intent serviceIntent = new Intent(this, SerialService.class);
         startService(serviceIntent);
-
     }
 
     private final BroadcastReceiver statusReceiver = new BroadcastReceiver() {
@@ -71,6 +81,4 @@ public class MainActivity extends AppCompatActivity {
             actionBar.setSubtitle(status); // Or use setTitle() if you prefer
         }
     }
-
-
 }

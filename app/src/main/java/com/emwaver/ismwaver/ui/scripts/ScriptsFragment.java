@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +27,7 @@ import com.emwaver.ismwaver.jsobjects.CC1101;
 import com.emwaver.ismwaver.jsobjects.Console;
 import com.emwaver.ismwaver.jsobjects.Serial;
 import com.emwaver.ismwaver.jsobjects.Utils;
+import com.github.akshay_naik.texthighlighterapi.TextHighlighter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,6 +35,7 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ScriptsFragment extends Fragment implements CommandSender {
 
@@ -93,6 +96,7 @@ public class ScriptsFragment extends Fragment implements CommandSender {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 loadFileContent(fileNames[position]);
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
             }
@@ -126,17 +130,8 @@ public class ScriptsFragment extends Fragment implements CommandSender {
             }
         });
 
-
         return root;
     }
-
-
-
-
-
-
-
-
 
     private void unbindServiceIfNeeded() {
         if (isServiceBound && !isFragmentActive() && getActivity() != null) {
@@ -203,8 +198,18 @@ public class ScriptsFragment extends Fragment implements CommandSender {
                 byte[] buffer = new byte[(int) file.length()];
                 fis.read(buffer);
                 fis.close();
-                String content = new String(buffer, "UTF-8");
-                binding.jsCodeInput.setText(content);
+                String content = new String(buffer, StandardCharsets.UTF_8);
+                content = content.replace("\n", "<br/> ");
+                content = content.replace("  ", "&nbsp; ");
+
+                TextHighlighter highlighter = new TextHighlighter();
+                highlighter.setLanguage(highlighter.C);
+                String highlightedText = highlighter.getHighlightedText(content);
+
+                binding.jsCodeInput.setText(Html.fromHtml(highlightedText));
+
+                //binding.jsCodeInput.setText(content);
+
             } catch (IOException ex) {
                 ex.printStackTrace();
                 showToastOnUiThread("Error loading file");
@@ -299,3 +304,8 @@ public class ScriptsFragment extends Fragment implements CommandSender {
         }
     }
 }
+
+
+
+
+
