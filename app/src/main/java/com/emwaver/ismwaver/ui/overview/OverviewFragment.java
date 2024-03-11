@@ -129,6 +129,7 @@ public class OverviewFragment extends Fragment {
                     return true;
                 } else if (itemId == R.id.apply) {
                     applyConfig();
+                    showToastOnUiThread("");
                     return true;
                 }
                 return false;
@@ -136,7 +137,7 @@ public class OverviewFragment extends Fragment {
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
 
-        Utils.updateStatusBarFile(this);
+        //Utils.updateStatusBarFile(this);
 
         binding.frequencyHeader.setOnClickListener(v -> {
             // Toggle visibility

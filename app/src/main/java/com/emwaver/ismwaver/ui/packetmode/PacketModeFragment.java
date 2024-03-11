@@ -121,7 +121,7 @@ public class PacketModeFragment extends Fragment {
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-        Utils.updateStatusBarFile(this);
+        //Utils.updateStatusBarFile(this);
 
         //region onClickListeners
         binding.sendTesla.setOnClickListener(new View.OnClickListener() {
@@ -345,7 +345,7 @@ public class PacketModeFragment extends Fragment {
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
                 loadPacketFile(uri); // Function to read and apply settings from the file
-                Utils.updateStatusBarFile(this, uri);
+                //Utils.updateStatusBarFile(this, uri);
             }
         });
 
@@ -387,8 +387,9 @@ public class PacketModeFragment extends Fragment {
 
     public void saveFile() {
         // Retrieve the URI for this fragment from the Utils.STATUS_BAR_URIS map
-        Uri uri = Utils.STATUS_BAR_URIS.get(this.getClass().getName());
+        //Uri uri = Utils.STATUS_BAR_URIS.get(this.getClass().getName());
 
+        Uri uri = null;
         if (uri != null) {
             try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(uri)) {
                 byte[] packetConfig = getPacketConfig(); // Method to gather current packet settings and payload

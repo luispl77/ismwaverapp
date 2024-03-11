@@ -110,7 +110,8 @@ public class ConsoleFragment extends Fragment {
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-        Utils.updateStatusBarFile(this);
+        Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT)));
+        loadFileToEditText(Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT));
 
         binding.consoleWindowText.setMovementMethod(new ScrollingMovementMethod()); // Set the TextView as scrollable
 
@@ -122,7 +123,6 @@ public class ConsoleFragment extends Fragment {
             binding.consoleWindowScrollView.post(() -> binding.consoleWindowScrollView.fullScroll(View.FOCUS_DOWN));
         });
 
-        //loadScriptFromAssets();
 
 
         console = new Console();
@@ -134,15 +134,24 @@ public class ConsoleFragment extends Fragment {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri uri = result.getData().getData();
                 if (uri != null) {
+                    final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                    getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     saveFileToUri(uri);
+                    Utils.saveUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT, uri);
+                    Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT)));
                 }
             }
         });
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
-                currentFileUri = uri; // Store the Uri
+                // Request persistable permissions for the URI
+                final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+
                 loadFileToEditText(uri);
+                Utils.saveUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT, uri);
+                Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT)));
             }
         });
 
@@ -150,15 +159,10 @@ public class ConsoleFragment extends Fragment {
     }
 
     private void executeScript(){
-        // Disable the clear button
-        //binding.clearButton.setEnabled(false);
-        // Optionally, change the button color to grey to indicate it's disabled
-        //binding.clearButton.setBackgroundColor(Color.GRAY); // Use an appropriate color
         new Thread(() -> {
             try {
                 String jsCode = binding.jsCodeInput.getText().toString();
                 ScriptsEngine scriptsEngine = new ScriptsEngine(cc, console, utils);
-                //Utils.changeStatus("Running script...", getContext());
                 String result = scriptsEngine.executeJavaScript(jsCode);
                 Console.print("\n<Console>");
                 if(result != null){
@@ -166,15 +170,6 @@ public class ConsoleFragment extends Fragment {
                 }
             } finally {
                 unbindServiceIfNeeded();
-                //Utils.changeStatus("", getContext());
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //binding.clearButton.setEnabled(true);
-                        // Optionally, reset the button color to indicate it's enabled
-                        //binding.clearButton.setBackgroundColor(Color.BLUE); // Reset to original color
-                    }
-                });
             }
         }).start();
     }
@@ -269,6 +264,7 @@ public class ConsoleFragment extends Fragment {
     }
 
     private void writeChangesToFile() {
+        Uri currentFileUri = Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT);
         if (currentFileUri == null) {
             Log.e("filesys", "No file is currently open");
             return;
@@ -289,27 +285,6 @@ public class ConsoleFragment extends Fragment {
         if (isAdded()) { // Check if Fragment is currently added to its activity
             getActivity().runOnUiThread(() ->
                     Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show());
-        }
-    }
-
-    private void loadScriptFromAssets() {
-        try {
-            // Open an input stream to read from the assets folder
-            InputStream is = getActivity().getAssets().open(".js");
-            int size = is.available();
-
-            // Read the entire script into a byte array
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-
-            // Convert the byte array to a String
-            String scriptContent = new String(buffer, StandardCharsets.UTF_8);
-
-            // Set the script content to the EditText
-            binding.jsCodeInput.setText(scriptContent);
-        } catch (IOException e) {
-            Log.e("assets", "Error loading script from assets", e);
         }
     }
 

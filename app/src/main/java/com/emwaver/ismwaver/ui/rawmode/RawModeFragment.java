@@ -91,6 +91,11 @@ public class RawModeFragment extends Fragment {
             Log.i("service binding", "onServiceConnected");
             //updateChart(compressDataAndGetDataSet(0, USBService.getBufferLength(), 1000));
             cc = new CC1101(USBService);
+
+            USBService.setBuffer(Constants.DATA_BUFFER);
+            fillBufferWithTesla(0.0001);
+            USBService.setBuffer(Constants.COMMAND_BUFFER);
+            refreshChart();
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -168,7 +173,7 @@ public class RawModeFragment extends Fragment {
         // Add the defined MenuProvider to the MenuHost
         menuHost.addMenuProvider(menuProvider, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-        Utils.updateStatusBarFile(this);
+        //Utils.updateStatusBarFile(this);
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 
@@ -233,6 +238,7 @@ public class RawModeFragment extends Fragment {
 
 
         initChart();
+
 
         chart.setOnChartGestureListener(new OnChartGestureListener() {
             //region useless chart listeners
@@ -500,8 +506,8 @@ public class RawModeFragment extends Fragment {
         xAxis.setAxisMaximum(chartMaxX); // End at the maximum X value
 
         YAxis leftAxis = chart.getAxisLeft();
-        leftAxis.setAxisMinimum(0); // Set minimum value for the left Y-axis
-        leftAxis.setAxisMaximum(255); // Set maximum value for the left Y-axis
+        leftAxis.setAxisMinimum(-128); // Set minimum value for the left Y-axis
+        leftAxis.setAxisMaximum(512); // Set maximum value for the left Y-axis
 
         YAxis rightAxis = chart.getAxisRight();
         rightAxis.setAxisMinimum(0); // Set minimum value for the right Y-axis
@@ -544,7 +550,8 @@ public class RawModeFragment extends Fragment {
         // Increase the line thickness (example: 3f for a thicker line)
         lineDataSet.setLineWidth(3f);
         // Set a more pronounced line color (example: Color.BLUE)
-        lineDataSet.setColor(Color.parseColor("#003d99"));
+        lineDataSet.setColor(Color.parseColor("#000000"));
+        lineDataSet.setCircleColor(Color.parseColor("#000000"));
 
         return lineDataSet;
     }

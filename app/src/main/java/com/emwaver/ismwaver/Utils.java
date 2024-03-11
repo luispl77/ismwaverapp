@@ -3,6 +3,7 @@ package com.emwaver.ismwaver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
@@ -18,13 +19,26 @@ import com.emwaver.ismwaver.ui.console.ConsoleFragment;
 import com.emwaver.ismwaver.ui.overview.OverviewFragment;
 import com.emwaver.ismwaver.ui.packetmode.PacketModeFragment;
 import com.emwaver.ismwaver.ui.rawmode.RawModeFragment;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
 
-    public static final Map<String, Uri> STATUS_BAR_URIS = new HashMap<>();
+    // SharedPreferences file name
+    private static final String PREFS_FILE_NAME = "MyPrefs";
+
+    // Define constants for SharedPreferences keys
+    public static final String KEY_CONSOLE_FRAGMENT = "ConsoleFragmentUri";
+    public static final String KEY_RAW_MODE_FRAGMENT = "RawModeFragmentUri";
+    public static final String KEY_OVERVIEW_FRAGMENT = "OverviewFragmentUri";
+    public static final String KEY_PACKET_MODE_FRAGMENT = "PacketModeFragmentUri";
+
+    // Simplify saving URIs
+
 
     public void delay(int delay_ms) {
         try {
@@ -98,26 +112,8 @@ public class Utils {
         return hexString.toString();
     }
 
-    public static void updateStatusBarFile(Fragment fragment, Uri uri) {
-        // Store the URI against the fragment's class name
-        STATUS_BAR_URIS.put(fragment.getClass().getName(), uri);
-        // Update the action bar status with the file name
-        updateActionBarStatus(fragment, getFileNameFromUri(fragment.getContext(), uri));
-    }
 
-    public static void updateStatusBarFile(Fragment fragment) {
-        Uri uri = STATUS_BAR_URIS.get(fragment.getClass().getName());
-        if (uri != null) {
-            // If the URI exists, update the action bar status with the file name
-            updateActionBarStatus(fragment, getFileNameFromUri(fragment.getContext(), uri));
-        } else {
-            // Handle the case where there's no URI associated with the fragment
-            // For example, setting a default status or indicating that no file is selected
-            updateActionBarStatus(fragment, "No File Selected");
-        }
-    }
-
-    private static void updateActionBarStatus(Fragment fragment, String status) {
+    public static void updateActionBarStatus(Fragment fragment, String status) {
         if (fragment.getActivity() instanceof AppCompatActivity) {
             AppCompatActivity activity = (AppCompatActivity) fragment.getActivity();
             ActionBar actionBar = activity.getSupportActionBar();
@@ -148,10 +144,22 @@ public class Utils {
         return fileName != null ? fileName : "Unknown File";
     }
 
-    public static void setStatusBarUri(Class<? extends Fragment> fragmentClass, Uri uri) {
-        // Directly store the URI against the fragment class name
-        STATUS_BAR_URIS.put(fragmentClass.getName(), uri);
+    public static void saveUri(Context context, String fragmentIdentifier, Uri uri) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString(fragmentIdentifier, uri.toString());
+        editor.apply();
     }
+
+    public static Uri getUri(Context context, String fragmentIdentifier) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE);
+        String uriString = prefs.getString(fragmentIdentifier, null);
+        return uriString != null ? Uri.parse(uriString) : null;
+    }
+
+
+
+
 
 
 
