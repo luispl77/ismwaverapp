@@ -14,6 +14,9 @@ import android.provider.OpenableColumns;
 import android.text.InputFilter;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -25,7 +28,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.R;
@@ -91,6 +97,29 @@ public class PacketModeFragment extends Fragment {
             }
             return null;
         };
+
+        MenuHost menuHost = requireActivity();
+        menuHost.addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.packetmode_menu, menu);
+            }
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+                if (itemId == R.id.open) {
+                    openFile();
+                    return true;
+                } else if (itemId == R.id.save) {
+                    saveFile();
+                    return true;
+                } else if (itemId == R.id.save_as) {
+                    saveAsFile();
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
         Utils.updateStatusBarFile(this);
 
@@ -312,10 +341,6 @@ public class PacketModeFragment extends Fragment {
 
         //endregion
 
-        binding.saveAsButton.setOnClickListener(v -> saveAsPacketFile());
-        binding.openButton.setOnClickListener(v -> openPacketFile());
-        binding.saveButton.setOnClickListener(v -> savePacketFile());
-
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
@@ -329,7 +354,7 @@ public class PacketModeFragment extends Fragment {
                 Uri uri = result.getData().getData();
                 if (uri != null) {
                     currentUri = uri;
-                    savePacketFile(); // Function to save the current settings to the file
+                    saveFile(); // Function to save the current settings to the file
                 }
             }
         });
@@ -360,7 +385,7 @@ public class PacketModeFragment extends Fragment {
         binding.syncwordTextInput.setText(Utils.bytesToHexString(syncWord));
     }
 
-    public void savePacketFile() {
+    public void saveFile() {
         // Retrieve the URI for this fragment from the Utils.STATUS_BAR_URIS map
         Uri uri = Utils.STATUS_BAR_URIS.get(this.getClass().getName());
 
@@ -374,12 +399,12 @@ public class PacketModeFragment extends Fragment {
         } else {
             // Handle the case where the URI is not set or not found in the map
             Log.e("SavePacketFile", "No URI found for this fragment.");
-            saveAsPacketFile();
+            saveAsFile();
         }
     }
 
 
-    public void saveAsPacketFile() {
+    public void saveAsFile() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
@@ -387,7 +412,7 @@ public class PacketModeFragment extends Fragment {
         createFileLauncher.launch(intent);
     }
 
-    public void openPacketFile() {
+    public void openFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");

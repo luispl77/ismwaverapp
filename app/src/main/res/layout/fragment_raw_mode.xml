@@ -7,57 +7,24 @@
     tools:context=".ui.rawmode.RawModeFragment">
 
 
-    <Button
-        android:id="@+id/stopRecordingButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="stop"
-        app:layout_constraintStart_toEndOf="@+id/startRecordingButton"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/startRecordingButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="start"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/initContinuousButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="init"
-        app:layout_constraintStart_toEndOf="@+id/stopRecordingButton"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/bufferReadingText"
-        android:layout_width="411dp"
-        android:layout_height="100dp"
-        android:scrollbars="vertical"
-        android:textSize="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/retransmitButton" />
 
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/retransmitButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="retransmit"
+        android:contentDescription="Retransmit"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="5dp"
+        android:tooltipText="Retransmit Signal"
+        app:icon="@drawable/beacon_svgrepo_com"
+        app:iconPadding="5dp"
+        app:iconSize="48dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginBottom="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/clearBufferButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-
-        android:text="clear buf"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/retransmitButton" />
 
 
     <com.github.mikephil.charting.charts.LineChart
@@ -67,11 +34,11 @@
         app:layout_constraintBottom_toTopOf="@+id/reconstructedSinalEditText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/startRecordingButton" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/reconstructedSinalEditText"
-        android:layout_width="0dp"
+        android:layout_width="411dp"
         android:layout_height="100dp"
         android:background="#EEE"
         android:gravity="top|start"
@@ -80,9 +47,18 @@
         android:padding="8dp"
         android:scrollbars="vertical"
         android:textColor="#000"
-        app:layout_constraintBottom_toTopOf="@+id/fillTeslaButton"
+
+        app:layout_constraintBottom_toTopOf="@+id/samplesPerSymbolEditText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Samples per Bit: "
+        app:layout_constraintBottom_toBottomOf="@+id/samplesPerSymbolEditText"
+        app:layout_constraintEnd_toStartOf="@+id/samplesPerSymbolEditText"
+        app:layout_constraintTop_toTopOf="@+id/samplesPerSymbolEditText" />
 
     <EditText
         android:id="@+id/samplesPerSymbolEditText"
@@ -94,9 +70,17 @@
         android:padding="8dp"
         android:text="40"
         android:textColor="#000"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/reconstructedSinalEditText" />
 
+        app:layout_constraintBottom_toTopOf="@+id/errorToleranceEditText"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Error Tolerance: "
+        app:layout_constraintBottom_toBottomOf="@id/errorToleranceEditText"
+        app:layout_constraintEnd_toStartOf="@+id/errorToleranceEditText"
+        app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
     <EditText
         android:id="@+id/errorToleranceEditText"
         android:layout_width="120dp"
@@ -107,62 +91,26 @@
         android:padding="8dp"
         android:text="10"
         android:textColor="#000"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/samplesPerSymbolEditText" />
-
-    <EditText
-        android:id="@+id/numberPointsEditText"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:hint="number of points..."
-        android:imeOptions="actionDone"
-        android:inputType="number"
-        android:padding="8dp"
-        android:text="500"
-        android:textColor="#000"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/errorToleranceEditText" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 
-    <Button
-        android:id="@+id/fillTeslaButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="fill"
-        app:layout_constraintBottom_toTopOf="@+id/reconstructButton"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/reconstructButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="reconstruct"
-        app:layout_constraintBottom_toTopOf="@+id/saveFileAsButton"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/saveFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="save"
-        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
-        app:layout_constraintStart_toEndOf="@+id/saveFileAsButton" />
-
-    <Button
-        android:id="@+id/saveFileAsButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="save as"
-        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/openFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="open"
-        app:layout_constraintBottom_toTopOf="@+id/retransmitButton"
-        app:layout_constraintStart_toEndOf="@+id/saveFileButton" />
+        android:contentDescription="Reconstruct"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="5dp"
+        android:tooltipText="Reconstruct Signal"
+        app:icon="@drawable/build_svgrepo_com"
+        app:iconPadding="5dp"
+        app:iconSize="48dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/retransmitButton" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

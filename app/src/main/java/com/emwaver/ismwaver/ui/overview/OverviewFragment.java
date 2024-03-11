@@ -323,7 +323,7 @@ public class OverviewFragment extends Fragment {
             if (uri != null) {
                 currentUri = uri;
                 // Update the TextView
-                binding.configFileTextView.setText(getFileName(uri));
+                //binding.configFileTextView.setText(getFileName(uri));
             }
         });
 

@@ -11,6 +11,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +24,14 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.databinding.FragmentRawModeBinding;
 import com.emwaver.ismwaver.CC1101;
@@ -69,6 +76,8 @@ public class RawModeFragment extends Fragment {
     private int numberBins = 1000;
     private int errorTolerance = 10;
     private int samplesPerSymbol = 40;
+    private boolean isRecording = false;
+
     private ActivityResultLauncher<Intent> createFileLauncher;
     private ActivityResultLauncher<String[]> openFileLauncher;
     private Uri currentFileUri;
@@ -104,18 +113,65 @@ public class RawModeFragment extends Fragment {
 
         chart = binding.chart;
 
+        MenuHost menuHost = requireActivity();
+
+        // Define the MenuProvider as a final variable
+        final MenuProvider menuProvider = new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.rawmode_menu, menu);
+                MenuItem recordItem = menu.findItem(R.id.record);
+                if (isRecording) {
+                    recordItem.setIcon(R.drawable.ai_stop); // Update with your stop icon
+                } else {
+                    recordItem.setIcon(R.drawable.ai_record); // Update with your record icon
+                }
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+                // Handle menu item selection
+                if (itemId == R.id.record) {
+                    // Toggle recording and refresh the menu
+                    if (isRecording) {
+                        stopRecording();
+                    } else {
+                        startRecording();
+                    }
+                    isRecording = !isRecording;
+                    refreshMenu(); // Correctly reference the menuProvider
+                    return true;
+                }else if(itemId == R.id.clear){
+                    clearSignalBuffer();
+                }else if (itemId == R.id.open) {
+                    openFile();
+                    return true;
+                } else if (itemId == R.id.save) {
+                    saveFile();
+                    return true;
+                } else if (itemId == R.id.save_as) {
+                    saveAsFile();
+                    return true;
+                }
+                // Handle other menu items...
+                return false;
+            }
+
+            private void refreshMenu() {
+                // Since menuProvider is now final, it can be referenced here
+                menuHost.removeMenuProvider(this); // Use 'this' to refer to the current MenuProvider instance
+                menuHost.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED); // Re-add to refresh
+            }
+        };
+
+        // Add the defined MenuProvider to the MenuHost
+        menuHost.addMenuProvider(menuProvider, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+
         Utils.updateStatusBarFile(this);
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 
-        binding.initContinuousButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(() -> {
-                    cc.initRxContinuous();
-                }).start();
-            }
-        });
 
         binding.retransmitButton.setOnClickListener(v -> {
             int bufferLength = USBService.getDataBufferLength();
@@ -129,43 +185,7 @@ public class RawModeFragment extends Fragment {
 
         });
 
-        binding.clearBufferButton.setOnClickListener(v -> {
-            USBService.clearDataBuffer();
-            Toast.makeText(getContext(), "buffer cleared" , Toast.LENGTH_SHORT).show();
-            updateChart(compressDataAndGetDataSet(rawModeViewModel.getVisibleRangeStart(), rawModeViewModel.getVisibleRangeEnd(), 1000));
-        });
 
-        binding.startRecordingButton.setOnClickListener(v -> {
-            String contCommand = "raw";
-            byte[] byteArray = contCommand.getBytes();
-            USBService.setBuffer(Constants.DATA_BUFFER);
-            USBService.write(byteArray);
-
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-            scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
-
-        });
-
-        binding.stopRecordingButton.setOnClickListener(v -> {
-            String contCommand = "ssss";
-            byte[] byteArray = contCommand.getBytes();
-            USBService.write(byteArray);
-            new Thread(() -> {
-                USBService.emptyReadBuffer(); //this function busy waits
-                USBService.setBuffer(Constants.COMMAND_BUFFER); //wait before the buffer is empty
-            }).start();
-
-            chartMaxX = USBService.getDataBufferLength()*8;
-            XAxis xAxis = chart.getXAxis();
-            xAxis.setAxisMinimum(chartMinX); // Start at 0 microseconds
-            xAxis.setAxisMaximum(chartMaxX);
-
-            if (scheduler != null && !scheduler.isShutdown()) {
-                scheduler.shutdownNow();
-            }
-
-            updateChart(compressDataAndGetDataSet(rawModeViewModel.getVisibleRangeStart(), rawModeViewModel.getVisibleRangeEnd(), numberBins));
-        });
 
         binding.reconstructButton.setOnClickListener(v -> {
             toggleVerticalLinesOnChart(USBService.findHighEdges(samplesPerSymbol, errorTolerance));
@@ -174,12 +194,6 @@ public class RawModeFragment extends Fragment {
             binding.reconstructedSinalEditText.setText(Utils.bytesToHexString(reconstructedSignal));
         });
 
-        binding.fillTeslaButton.setOnClickListener(v -> {
-            USBService.setBuffer(Constants.DATA_BUFFER);
-            fillBufferWithTesla(0.0005);
-            USBService.setBuffer(Constants.COMMAND_BUFFER);
-            refreshChart();
-        });
 
         binding.errorToleranceEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -217,35 +231,6 @@ public class RawModeFragment extends Fragment {
             return false; // Pass the event on to other listeners
         });
 
-        binding.numberPointsEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                new Thread(() -> {
-                    String deviationStr = binding.numberPointsEditText.getText().toString().trim();
-                    // Parse the string to an integer
-                    try {
-                        numberBins = Integer.parseInt(deviationStr);
-                        showToastOnUiThread("numberBins set to: " + numberBins);
-
-                    } catch (NumberFormatException e) {
-                        showToastOnUiThread("Invalid numberBins entered");
-                    }
-                }).start();
-                return true; // Consume the action
-            }
-            return false; // Pass the event on to other listeners
-        });
-
-        binding.saveFileAsButton.setOnClickListener(v -> {
-            buttonCreateFile();
-        });
-
-        binding.saveFileButton.setOnClickListener(v -> {
-            buttonSaveFile();
-        });
-
-        binding.openFileButton.setOnClickListener(v -> {
-            buttonOpenFile();
-        });
 
         initChart();
 
@@ -342,6 +327,43 @@ public class RawModeFragment extends Fragment {
         });
 
         return root;
+    }
+
+    public void startRecording(){
+        String contCommand = "raw";
+        byte[] byteArray = contCommand.getBytes();
+        USBService.setBuffer(Constants.DATA_BUFFER);
+        USBService.write(byteArray);
+
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(this::refreshChart, 0, refreshRate, TimeUnit.MILLISECONDS);
+    }
+
+    public void stopRecording(){
+        String contCommand = "ssss";
+        byte[] byteArray = contCommand.getBytes();
+        USBService.write(byteArray);
+        new Thread(() -> {
+            USBService.emptyReadBuffer(); //this function busy waits
+            USBService.setBuffer(Constants.COMMAND_BUFFER); //wait before the buffer is empty
+        }).start();
+
+        chartMaxX = USBService.getDataBufferLength()*8;
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setAxisMinimum(chartMinX); // Start at 0 microseconds
+        xAxis.setAxisMaximum(chartMaxX);
+
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdownNow();
+        }
+
+        updateChart(compressDataAndGetDataSet(rawModeViewModel.getVisibleRangeStart(), rawModeViewModel.getVisibleRangeEnd(), numberBins));
+    }
+
+    private void clearSignalBuffer() {
+        USBService.clearDataBuffer();
+        Toast.makeText(getContext(), "buffer cleared" , Toast.LENGTH_SHORT).show();
+        updateChart(compressDataAndGetDataSet(rawModeViewModel.getVisibleRangeStart(), rawModeViewModel.getVisibleRangeEnd(), 1000));
     }
 
     private void fillBufferWithTesla(double noise) {
@@ -581,14 +603,14 @@ public class RawModeFragment extends Fragment {
         super.onPause();
     }
 
-    public void buttonOpenFile() {
+    public void openFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // MIME type for .raw files or use "*/*" for any file type
         openFileLauncher.launch(new String[]{"*/*"}); // Pass the MIME type as an array
     }
 
-    public void buttonCreateFile() {
+    public void saveAsFile() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*"); // Set MIME Type as per your requirement
@@ -597,7 +619,7 @@ public class RawModeFragment extends Fragment {
         createFileLauncher.launch(intent);
     }
 
-    public void buttonSaveFile() {
+    public void saveFile() {
         writeChangesToFile();
     }
 

@@ -129,22 +129,6 @@ public class ConsoleFragment extends Fragment {
 
         utils = new Utils();
 
-        /*
-        binding.consoleTextInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                String userInput = terminalTextInput.getText().toString();
-                consoleViewModel.appendData(userInput+"\n");
-                terminalTextInput.setText("");
-            }
-            return false;
-        });
-        */
-
-
-
-
-
-
 
         createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
