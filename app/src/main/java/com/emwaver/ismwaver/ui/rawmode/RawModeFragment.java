@@ -89,13 +89,11 @@ public class RawModeFragment extends Fragment {
             USBService = binder.getService();
             isServiceBound = true;
             Log.i("service binding", "onServiceConnected");
-            //updateChart(compressDataAndGetDataSet(0, USBService.getBufferLength(), 1000));
             cc = new CC1101(USBService);
-
-            USBService.setBuffer(Constants.DATA_BUFFER);
-            fillBufferWithTesla(0.0001);
-            USBService.setBuffer(Constants.COMMAND_BUFFER);
-            refreshChart();
+            Utils.updateActionBarStatus(RawModeFragment.this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT)));
+            loadFileToBuffer(Utils.getUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT));
+            initChart();
+            updateChart(compressDataAndGetDataSet(chartMinX, USBService.getCommandBufferLength()*8, numberBins));
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -173,7 +171,7 @@ public class RawModeFragment extends Fragment {
         // Add the defined MenuProvider to the MenuHost
         menuHost.addMenuProvider(menuProvider, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-        //Utils.updateStatusBarFile(this);
+
 
         rawModeViewModel = new ViewModelProvider(this).get(RawModeViewModel.class);
 
@@ -237,7 +235,7 @@ public class RawModeFragment extends Fragment {
         });
 
 
-        initChart();
+
 
 
         chart.setOnChartGestureListener(new OnChartGestureListener() {
@@ -320,15 +318,22 @@ public class RawModeFragment extends Fragment {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri uri = result.getData().getData();
                 if (uri != null) {
+                    final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                    getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     saveFileToUri(uri);
+                    Utils.saveUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT, uri);
+                    Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT)));
                 }
             }
         });
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
-                currentFileUri = uri; // Store the Uri
+                final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                 loadFileToBuffer(uri);
+                Utils.saveUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT, uri);
+                Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_RAW_MODE_FRAGMENT)));
             }
         });
 
@@ -639,13 +644,17 @@ public class RawModeFragment extends Fragment {
     }
 
     private void loadFileToBuffer(Uri uri) {
-        try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
-            byte[] fileData = readBytes(instream);
-            // Now send this data to your native code to populate dataBuffer
-            USBService.loadDataBuffer(fileData);
-            refreshChart();
-        } catch (IOException e) {
-            Log.e("filesys", "Error reading from file", e);
+        if(uri != null){
+            try (InputStream instream = getActivity().getContentResolver().openInputStream(uri)) {
+                byte[] fileData = readBytes(instream);
+                // Now send this data to your native code to populate dataBuffer
+                USBService.loadDataBuffer(fileData);
+                refreshChart();
+            } catch (IOException e) {
+                Log.e("filesys", "Error reading from file", e);
+            }
+        }else{
+            //showToastOnUiThread("");
         }
     }
 

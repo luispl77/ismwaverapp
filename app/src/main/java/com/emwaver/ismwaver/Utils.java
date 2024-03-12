@@ -124,7 +124,7 @@ public class Utils {
     }
 
     public static String getFileNameFromUri(Context context, Uri uri) {
-        if (uri == null) return "Unknown File";
+        if (uri == null) return "No File Selected";
         String fileName = null;
         ContentResolver contentResolver = context.getContentResolver();
         Cursor cursor = null;

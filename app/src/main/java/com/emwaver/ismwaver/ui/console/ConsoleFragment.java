@@ -145,10 +145,8 @@ public class ConsoleFragment extends Fragment {
 
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
-                // Request persistable permissions for the URI
                 final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
                 getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
-
                 loadFileToEditText(uri);
                 Utils.saveUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT, uri);
                 Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_CONSOLE_FRAGMENT)));
