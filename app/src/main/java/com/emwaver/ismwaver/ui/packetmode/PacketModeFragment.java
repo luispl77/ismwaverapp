@@ -66,6 +66,7 @@ public class PacketModeFragment extends Fragment {
             cc = new CC1101(USBService);
             if(USBService.checkConnection())
                 updatePacketSettings();
+            Utils.updateActionBarStatus(PacketModeFragment.this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_PACKET_MODE_FRAGMENT)));
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -341,11 +342,13 @@ public class PacketModeFragment extends Fragment {
 
         //endregion
 
-
         openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
             if (uri != null) {
-                loadPacketFile(uri); // Function to read and apply settings from the file
-                //Utils.updateStatusBarFile(this, uri);
+                final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                //loadPacketFile(uri);
+                Utils.saveUri(getContext(), Utils.KEY_PACKET_MODE_FRAGMENT, uri);
+                Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_PACKET_MODE_FRAGMENT)));
             }
         });
 
@@ -353,8 +356,11 @@ public class PacketModeFragment extends Fragment {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri uri = result.getData().getData();
                 if (uri != null) {
-                    currentUri = uri;
-                    saveFile(); // Function to save the current settings to the file
+                    final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                    getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                    saveFile();
+                    Utils.saveUri(getContext(), Utils.KEY_PACKET_MODE_FRAGMENT, uri);
+                    Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_PACKET_MODE_FRAGMENT)));
                 }
             }
         });

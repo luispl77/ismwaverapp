@@ -86,7 +86,7 @@ public class OverviewFragment extends Fragment {
             Log.i("service binding", "onServiceConnected");
             cc = new CC1101(USBService);
             handler.post(checkConnectionTask); // Start periodic updates when the fragment starts
-
+            Utils.updateActionBarStatus(OverviewFragment.this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_OVERVIEW_FRAGMENT)));
         }
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
@@ -129,15 +129,13 @@ public class OverviewFragment extends Fragment {
                     return true;
                 } else if (itemId == R.id.apply) {
                     applyConfig();
-                    showToastOnUiThread("");
+                    //showToastOnUiThread("");
                     return true;
                 }
                 return false;
             }
         }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
-
-        //Utils.updateStatusBarFile(this);
 
         binding.frequencyHeader.setOnClickListener(v -> {
             // Toggle visibility
@@ -320,22 +318,26 @@ public class OverviewFragment extends Fragment {
         //endregion
 
 
-        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
-            if (uri != null) {
-                currentUri = uri;
-                // Update the TextView
-                //binding.configFileTextView.setText(getFileName(uri));
-            }
-        });
-
         createFileLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
             if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri uri = result.getData().getData();
                 if (uri != null) {
-                    currentUri = uri;
-                    // Write the current configuration to the new file
+                    final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                    getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     saveFile();
+                    Utils.saveUri(getContext(), Utils.KEY_OVERVIEW_FRAGMENT, uri);
+                    Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_OVERVIEW_FRAGMENT)));
                 }
+            }
+        });
+
+        openFileLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+            if (uri != null) {
+                final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+
+                Utils.saveUri(getContext(), Utils.KEY_OVERVIEW_FRAGMENT, uri);
+                Utils.updateActionBarStatus(this, Utils.getFileNameFromUri(getContext(), Utils.getUri(getContext(), Utils.KEY_OVERVIEW_FRAGMENT)));
             }
         });
 
