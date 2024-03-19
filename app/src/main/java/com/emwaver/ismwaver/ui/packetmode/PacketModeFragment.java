@@ -7,9 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.text.InputFilter;
 import android.util.Log;
@@ -28,6 +31,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.MenuHost;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
@@ -56,6 +60,30 @@ public class PacketModeFragment extends Fragment {
     private CC1101 cc;
     private USBService USBService;
     private boolean isServiceBound = false;
+    private boolean isPeriodicReceptionEnabled = false;
+    private final Handler handler = new Handler(Looper.getMainLooper()); //todo: make this run on thread instead
+
+    private final Runnable receiveDataTask = new Runnable() {
+        @Override
+        public void run() {
+            if (isPeriodicReceptionEnabled) {
+                new Thread(() -> {
+                    byte[] receivedBytes = cc.receiveData();
+                    if(receivedBytes == null){
+                        Log.i("Periodic Reception", "No data received");
+                        // Optional: Update UI to indicate no data received
+                    } else {
+                        String hexString = Utils.bytesToHexString(receivedBytes);
+                        Log.i("Periodic Reception", "Received: " + hexString);
+                        getActivity().runOnUiThread(() ->
+                                binding.receivePayloadDataTextInput.setText(hexString));
+                    }
+                }).start();
+                handler.postDelayed(this, 3000); // Schedule the next reception in 3 seconds
+            }
+        }
+    };
+
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -85,10 +113,15 @@ public class PacketModeFragment extends Fragment {
 
         packetModeViewModel = new ViewModelProvider(this).get(PacketModeViewModel.class);
 
-
+         // For Activity
 
         binding = FragmentPacketModeBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+
+        binding.sendPayloadButton.setBackgroundColor(Color.parseColor("#D0EAFB"));
+        binding.receivePayloadButton.setBackgroundColor(Color.parseColor("#AEDFA3"));
+        binding.transferPayloadTxButton.setBackgroundColor(Color.parseColor("#AEDFA3"));
+
 
         InputFilter hexFilter = (source, start, end, dest, dstart, dend) -> {
             for (int i = start; i < end; i++) {
@@ -124,35 +157,25 @@ public class PacketModeFragment extends Fragment {
 
         //Utils.updateStatusBarFile(this);
 
-        //region onClickListeners
-        binding.sendTesla.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(() -> {
-                    byte [] teslaSignal = {(byte)0xAA, (byte)0xAA, (byte)0xAA, (byte)0xCB, (byte)0x8A, 50, -52, -52, -53, 77, 45, 74, -45, 76, -85, 75, 21, -106, 101, -103, -103, -106, -102, 90, -107, -90, -103, 86, -106, 43, 44, -53, 51, 51, 45, 52, -75, 43, 77, 50, -83, 40};
-                    cc.sendData(teslaSignal, teslaSignal.length, 300);
-                    showToastOnUiThread("tesla signal sent");
-                }).start();
+        binding.packetSettingsHeader.setOnClickListener(v -> {
+            // Toggle visibility of the packet settings content
+            binding.packetSettingsContent.setVisibility(binding.packetSettingsContent.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+        });
+
+        // In your onCreateView or onViewCreated method, after initializing your views:
+        binding.enablePeriodicReceptionCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            isPeriodicReceptionEnabled = isChecked;
+            if (isChecked) {
+                // Start periodic reception
+                handler.post(receiveDataTask);
+            } else {
+                // Stop periodic reception
+                handler.removeCallbacks(receiveDataTask);
             }
         });
 
-        binding.manchesterSwitch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                boolean isChecked = binding.manchesterSwitch.isChecked();
-                // isChecked will be true if the switch is currently to the right (Manchester)
-                new Thread(() -> {
-                    if(cc.setManchesterEncoding(isChecked)) {
-                        showToastOnUiThread("Manchester encoding set successfully to " + isChecked);
-                    } else {
-                        showToastOnUiThread("Failed to set encoding");
-                        // Revert the switch to its previous state on failure
-                        // Must run on UI thread as it modifies the view
-                        getActivity().runOnUiThread(() -> binding.manchesterSwitch.setChecked(!isChecked));
-                    }
-                }).start();
-            }
-        });
+
+        //region onClickListeners
 
 
         binding.datarateTextInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -229,27 +252,6 @@ public class PacketModeFragment extends Fragment {
         });
 
 
-
-
-        binding.initTransmitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(() -> {
-                    cc.initTx();
-                    showToastOnUiThread("check console");
-                }).start();
-            }
-        });
-
-        binding.initReceiveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new Thread(() -> {
-                    cc.initRx();
-                    showToastOnUiThread("check console");
-                }).start();
-            }
-        });
 
         binding.receivePayloadDataTextInput.setFilters(new InputFilter[]{hexFilter});
         // Set an OnClickListener for the button

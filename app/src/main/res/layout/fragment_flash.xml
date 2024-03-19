@@ -6,19 +6,28 @@
     android:layout_height="match_parent"
     tools:context=".ui.flash.FlashFragment">
 
-    <!--
+
     <ImageView
         android:id="@+id/deviceImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
         android:scaleType="centerInside"
-        android:src="@drawable/flashicon"
+        android:src="@drawable/flash_button_wide"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="@+id/scrollView3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-     -->
+
+    <TextView
+        android:id="@+id/flashDeviceStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Checking connection..."
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/deviceImageView"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 
     <Button
         android:id="@+id/connectButton"
@@ -28,37 +37,17 @@
         android:focusable="true"
         android:text="connect"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/selectedFileName" />
 
-    <Button
-        android:id="@+id/clearTxt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        android:focusable="true"
-        android:text="clear"
-        app:layout_constraintEnd_toStartOf="@+id/connectButton"
-        app:layout_constraintTop_toTopOf="parent" />
-
-
-    <Button
-        android:id="@+id/openFileButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        android:focusable="true"
-        android:text="open file"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/connectButton" />
 
     <TextView
         android:id="@+id/selectedFileName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="No file selected"
+        android:textColor="@color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/openFileButton" />
-
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/readFlashButton"
@@ -67,6 +56,7 @@
         android:clickable="true"
         android:focusable="true"
         android:text="read flash"
+        app:icon="@drawable/ai_download"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/writeFlashButton" />
 
@@ -77,8 +67,9 @@
         android:clickable="true"
         android:focusable="true"
         android:text="write flash"
+        app:icon="@drawable/ai_upload"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/verifyFlashButton" />
 
 
     <Button
@@ -88,8 +79,9 @@
         android:clickable="true"
         android:focusable="true"
         android:text="verify flash"
+        app:icon="@drawable/ai_accept"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/readFlashButton" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <ScrollView
@@ -99,7 +91,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/verifyFlashButton">
+        app:layout_constraintTop_toBottomOf="@+id/readFlashButton">
 
         <TextView
             android:id="@+id/status"

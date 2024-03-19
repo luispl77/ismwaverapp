@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/menu/flash_menu.xml -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/clear"
+        android:title="Clear Status"
+        android:orderInCategory="100"
+        android:icon="@drawable/ai_discard"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/open"
+        android:title="Open File"
+        android:orderInCategory="100"
+        android:icon="@drawable/ai_collection"
+        app:showAsAction="ifRoom"/>
+
+</menu>

@@ -238,6 +238,24 @@ public class USBService extends Service implements SerialInputOutputManager.List
         }
     }
 
+    public boolean isFlashDeviceConnected() {
+        final int USB_VENDOR_ID = 1155;   // VID while in DFU mode 0x0483
+        final int USB_PRODUCT_ID = 57105; // PID while in DFU mode 0xDF11
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
+
+        boolean deviceFound = false;
+        for (UsbDevice device : deviceList.values()) {
+            if (device.getVendorId() == USB_VENDOR_ID && device.getProductId() == USB_PRODUCT_ID) {
+                deviceFound = true;
+                break;
+            }
+        }
+        // Return true if a device was found and permission is granted, false otherwise
+        return deviceFound;
+    }
+
+
     @Override
     public void onCreate() {
         super.onCreate();

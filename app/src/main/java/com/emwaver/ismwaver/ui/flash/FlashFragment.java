@@ -8,15 +8,21 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -26,10 +32,14 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.view.MenuHost;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.emwaver.ismwaver.Constants;
+import com.emwaver.ismwaver.R;
 import com.emwaver.ismwaver.USBService;
 import com.emwaver.ismwaver.Utils;
 import com.emwaver.ismwaver.databinding.FragmentFlashBinding;
@@ -54,6 +64,30 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
 
     private boolean isServiceBound = false;
 
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable connectUSBFlashTask = new Runnable() {
+        @Override
+        public void run() {
+            if (USBService != null && isServiceBound) {
+                boolean isConnected = USBService.isFlashDeviceConnected();
+                if (isConnected) {
+                    binding.flashDeviceStatus.setText("Flash device\nis connected.");
+                    binding.flashDeviceStatus.setTextColor(Color.GREEN); // Set text color to green
+                } else {
+                    binding.flashDeviceStatus.setText("Flash device\nis not connected.");
+                    binding.flashDeviceStatus.setTextColor(Color.RED); // Set text color to red
+                }
+            } else {
+                binding.flashDeviceStatus.setText("USBService is not bound or is null.");
+                binding.flashDeviceStatus.setTextColor(Color.RED); // Set text color to red
+            }
+            handler.postDelayed(this, 3000); // Reschedule for another check in 3 seconds
+        }
+    };
+
+
+
+
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -77,6 +111,27 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
 
         flashViewModel = new ViewModelProvider(this).get(FlashViewModel.class);
         binding = FragmentFlashBinding.inflate(inflater, container, false);
+        binding.getRoot().setBackgroundColor(Color.parseColor("#808080")); // Grey color
+
+        MenuHost menuHost = requireActivity();
+        menuHost.addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.flash_menu, menu);
+            }
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                int itemId = menuItem.getItemId();
+                if (itemId == R.id.open) {
+                    buttonOpenFile();
+                    return true;
+                } else if (itemId == R.id.clear) {
+                    status.setText("");
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
 
         dfu = new Dfu(USB_VENDOR_ID, USB_PRODUCT_ID, this);
         dfu.setListener(this);
@@ -99,20 +154,6 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
             @Override
             public void onClick(View v) {
                 USBService.connectUSBFlash();
-            }
-        });
-
-        binding.clearTxt.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                status.setText("");
-            }
-        });
-
-        binding.openFileButton.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                buttonOpenFile();
             }
         });
 
@@ -190,12 +231,14 @@ public class FlashFragment extends Fragment implements Dfu.DfuListener {
         }
         IntentFilter filter = new IntentFilter(Constants.ACTION_CONNECT_USB_BOOTLOADER);
         requireActivity().registerReceiver(connectReceiver, filter);
+
+        handler.post(connectUSBFlashTask);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-
+        handler.removeCallbacks(connectUSBFlashTask);
     }
 
     private final BroadcastReceiver connectReceiver = new BroadcastReceiver() {

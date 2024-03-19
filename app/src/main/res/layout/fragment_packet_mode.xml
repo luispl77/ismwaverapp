@@ -6,179 +6,82 @@
     android:layout_height="match_parent"
     tools:context=".ui.packetmode.PacketModeFragment">
 
-    <Button
-        android:id="@+id/saveButton"
-        android:layout_width="0dp"
+
+    <CheckBox
+        android:id="@+id/enablePeriodicReceptionCheckbox"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Save"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/transferPayloadTxButton" />
+        android:text="Automatic Reception"
+        app:layout_constraintStart_toEndOf="@+id/textView"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/saveAsButton"
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Save As"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/saveButton" />
-
-    <Button
-        android:id="@+id/openButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="Open"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/saveAsButton" />
-
-
-    <Button
-        android:id="@+id/sendTesla"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:text="send tesla"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.1" />
-
-    <Button
-        android:id="@+id/transferPayloadTxButton"
-        android:layout_width="120dp"
-        android:layout_height="55dp"
-        android:text="transfer"
+        android:text="Check for received \npackets periodically: "
         android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/receivePayloadDataTextInput"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/transmitPayloadDataTextInput" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/manchesterSwitch"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:text="Manchester encoding"
-        android:layout_marginLeft="10dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/initReceiveButton" />
-
-
-    <AutoCompleteTextView
-        android:id="@+id/packetLengthEditText"
-        android:layout_width="100dp"
-        android:layout_height="48dp"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:hint="Pkt length"
-        app:layout_constraintEnd_toStartOf="@+id/receivePayloadButton"
-        app:layout_constraintStart_toEndOf="@+id/sendPayloadButton"
-        app:layout_constraintTop_toBottomOf="@+id/receivePayloadDataTextInput" />
-
-
-    <AutoCompleteTextView
-        android:id="@+id/modulationSelector"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:hint="Modulation"
-        app:layout_constraintEnd_toStartOf="@+id/preambleSelector"
-        app:layout_constraintStart_toEndOf="@+id/manchesterSwitch"
-        app:layout_constraintTop_toBottomOf="@+id/sendTesla" />
-
-
-    <AutoCompleteTextView
-        android:id="@+id/preambleSelector"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:hint="Preamble"
-        android:layout_marginRight="10dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/initTransmitButton" />
-
-
-    <EditText
-        android:id="@+id/datarateTextInput"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:hint="datarate..."
-        android:layout_marginLeft="10dp"
-        android:imeOptions="actionDone"
-        android:inputType="number"
-        android:padding="8dp"
-        android:textColor="#000"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/manchesterSwitch" />
-
-    <EditText
-        android:id="@+id/deviationTextInput"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:hint="deviation..."
-        android:layout_marginRight="10dp"
-        android:imeOptions="actionDone"
-        android:inputType="number"
-        android:padding="8dp"
-        android:textColor="#000"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/preambleSelector" />
-
-    <EditText
-        android:id="@+id/syncwordTextInput"
-        android:layout_width="120dp"
-        android:layout_height="48dp"
-        android:hint="sync word..."
-        android:imeOptions="actionDone"
-        android:inputType="text"
-        android:padding="8dp"
-        android:textColor="#000"
-        app:layout_constraintEnd_toStartOf="@+id/deviationTextInput"
-        app:layout_constraintStart_toEndOf="@+id/datarateTextInput"
-        app:layout_constraintTop_toBottomOf="@+id/modulationSelector" />
 
     <Button
         android:id="@+id/sendPayloadButton"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:layout_marginLeft="10dp"
-        android:text="SEND PAYLOAD"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:iconSize="48dp"
+        android:textAlignment="textStart"
+        android:layout_marginLeft="0dp"
+        android:text="SEND\nPAYLOAD"
+        android:textColor="@color/black"
+        app:iconTint="@color/black"
+        android:insetBottom="0dp"
+        app:icon="@drawable/beacon_svgrepo_com"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/receivePayloadDataTextInput" />
 
     <Button
         android:id="@+id/receivePayloadButton"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:layout_marginRight="10dp"
-        android:text="receive payload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="0dp"
+        android:text="receive\npayload"
+        android:textColor="@color/black"
+        app:iconTint="@color/black"
+        app:iconSize="48dp"
+        android:insetTop="0dp"
+        app:icon="@drawable/ai_download"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/receivePayloadDataTextInput" />
 
-    <Button
-        android:id="@+id/initTransmitButton"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:text="init transmit"
-        android:layout_marginRight="10dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/initReceiveButton"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:text="init receive"
-        android:layout_marginLeft="10dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
+        android:id="@+id/transferPayloadTxButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:insetLeft="0dp"
+        android:insetTop="0dp"
+        android:insetRight="0dp"
+        android:insetBottom="0dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="0dp"
+        android:text=""
+        app:iconTint="@color/black"
+        app:icon="@drawable/ai_expand"
+        app:iconSize="48dp"
+        app:layout_constraintBottom_toTopOf="@+id/transmitPayloadDataTextInput"
+        app:layout_constraintEnd_toStartOf="@+id/receivePayloadButton"
+        app:layout_constraintStart_toEndOf="@+id/sendPayloadButton"
+        app:layout_constraintTop_toBottomOf="@+id/receivePayloadDataTextInput" />
 
     <EditText
         android:id="@+id/receivePayloadDataTextInput"
         android:layout_width="411dp"
         android:layout_height="100dp"
-        android:background="#EEE"
+        android:background="#AEDFA3"
         android:gravity="top|start"
         android:hint="Hex data received..."
         android:inputType="textMultiLine"
@@ -187,13 +90,13 @@
         android:textColor="#000"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/datarateTextInput" />
+        app:layout_constraintTop_toBottomOf="@+id/enablePeriodicReceptionCheckbox" />
 
     <EditText
         android:id="@+id/transmitPayloadDataTextInput"
         android:layout_width="411dp"
         android:layout_height="100dp"
-        android:background="#EEE"
+        android:background="#D0EAFB"
         android:gravity="top|start"
         android:hint="Hex data to transmit..."
         android:inputType="textMultiLine"
@@ -203,6 +106,198 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/sendPayloadButton" />
+
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/transmitPayloadDataTextInput">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintTop_toBottomOf="@+id/initReceiveButton">
+
+            <!-- Packet Settings Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/packetSettingsHeader"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:text="Packet Settings"
+                    android:background="?attr/selectableItemBackground"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+
+                <ImageView
+                    android:id="@+id/packetSettingsArrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:src="@drawable/ai_expand" /> <!-- Use appropriate arrow drawable -->
+            </LinearLayout>
+
+
+            <!-- Packet Settings Content -->
+            <LinearLayout
+                android:id="@+id/packetSettingsContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <!-- Layout for Packet Length -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Packet Length:" />
+
+                    <AutoCompleteTextView
+                        android:id="@+id/packetLengthEditText"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:hint="Pkt length" />
+                </LinearLayout>
+
+                <!-- Layout for Modulation Selector -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Modulation:" />
+
+                    <AutoCompleteTextView
+                        android:id="@+id/modulationSelector"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:hint="Modulation" />
+                </LinearLayout>
+
+                <!-- Layout for Preamble Selector -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Preamble:" />
+
+                    <AutoCompleteTextView
+                        android:id="@+id/preambleSelector"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:hint="Preamble" />
+                </LinearLayout>
+
+                <!-- Layout for Data Rate -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Data Rate:" />
+
+                    <EditText
+                        android:id="@+id/datarateTextInput"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:hint="datarate..."
+                        android:imeOptions="actionDone"
+                        android:inputType="number"
+                        android:padding="8dp"
+                        android:textColor="#000" />
+                </LinearLayout>
+
+                <!-- Layout for Deviation -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Deviation:" />
+
+                    <EditText
+                        android:id="@+id/deviationTextInput"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:hint="deviation..."
+                        android:imeOptions="actionDone"
+                        android:inputType="number"
+                        android:padding="8dp"
+                        android:textColor="#000" />
+                </LinearLayout>
+
+                <!-- Layout for Sync Word -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Sync Word:" />
+
+                    <EditText
+                        android:id="@+id/syncwordTextInput"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:hint="sync word..."
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:padding="8dp"
+                        android:textColor="#000" />
+                </LinearLayout>
+
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
